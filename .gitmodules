@@ -3,4 +3,4 @@
 	url = https://github.com/libopencm3/libopencm3.git
 [submodule "mupq"]
 	path = mupq
-	url = https://github.com/mupq/mupq.git
+	url = git@git-crypto.elen.ucl.ac.be:obronchain/mupq_masked.git
