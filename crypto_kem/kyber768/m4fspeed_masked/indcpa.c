@@ -5,6 +5,8 @@
 #include "randombytes.h"
 #include "symmetric.h"
 #include "matacc.h"
+#include "masked_utils.h"
+#include "masked_poly.h"
 
 #include <string.h>
 #include <stdint.h>
@@ -153,10 +155,15 @@ unsigned char indcpa_enc_cmp(const unsigned char *c,
     int i;
     unsigned char nonce = 0;
 
-    for (i = 0; i < KYBER_K; i++)
+    StrAPolyVec masked_sp;
+    for (i = 0; i < KYBER_K; i++){
         poly_getnoise(sp.vec + i, coins, nonce++);
-
-    polyvec_ntt(&sp);
+        masked_poly(masked_sp[i], sp.vec+i);
+        maskedpoly_ntt(masked_sp[i]);
+        unmasked_poly(sp.vec + i,masked_sp[i]);
+    }
+     
+    //polyvec_ntt(&sp);
     
     // i = 0
     matacc_cache32(&bp, &sp, &sp_prime, 0, seed, 1);

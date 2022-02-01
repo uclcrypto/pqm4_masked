@@ -1,5 +1,5 @@
 #include "poly.h"
-#include "maskedpoly.h"
+#include "masked_poly.h"
 #include "masked.h"
 
 #include "cbd.h"
