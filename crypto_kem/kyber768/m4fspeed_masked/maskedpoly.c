@@ -18,9 +18,9 @@
 *
 * Arguments:   - uint16_t *r: pointer to in/output polynomial
 **************************************************/
-void maskedpoly_ntt(StrAPoly *r) {
+void maskedpoly_ntt(StrAPoly r) {
     for(int d=0;d<NSHARES;d++){
-        ntt((int16_t *) r[d]);
+        ntt(r[d]);
     }
 }
 
@@ -33,8 +33,8 @@ void maskedpoly_ntt(StrAPoly *r) {
 *
 * Arguments:   - uint16_t *a: pointer to in/output polynomial
 **************************************************/
-void maskedpoly_invntt(StrAPoly *r) {
+void maskedpoly_invntt(StrAPoly r) {
     for(int d=0; d<NSHARES;d++){
-        invntt((int16_t *) r[d]);
+        invntt(r[d]);
     }
 }
