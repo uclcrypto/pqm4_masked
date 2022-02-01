@@ -1,4 +1,4 @@
-//#include "masked_utils.h"
+#include "masked_utils.h"
 #include "masked.h"
 #include <libopencm3/stm32/rng.h>
 #include "poly.h"
