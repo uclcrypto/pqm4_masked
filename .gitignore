@@ -7,5 +7,6 @@ testvectors/
 benchmarks/
 __pycache__/
 bin/
+obj/
 bin-host/
 compile_commands.json
