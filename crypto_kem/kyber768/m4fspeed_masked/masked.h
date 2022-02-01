@@ -3,12 +3,19 @@
 #include <stdint.h>
 #include "params.h"
 
-#define NSHARES 3
+#define NSHARES 2
+#define COEF_NBITS 12
 
-typedef poly maskedpoly[NSHARES];
+#define BSSIZE 32
 
-typedef struct {
-    maskedpoly vec[KYBER_K];
-} maskedpolyvec;
+typedef uint32_t BsBBit[NSHARES]; // dense
+typedef BsBBit BsBCoef[COEF_NBITS]; // dense
+typedef int16_t Coef;
+typedef Coef ACoef[NSHARES]; // dense
+typedef ACoef APoly[KYBER_N]; // dense
+typedef APoly APolyVec[KYBER_K]; // dense
+typedef Coef StrAPoly[NSHARES][KYBER_N]; // strided
+typedef StrAPoly StrAPolyVec[KYBER_K]; // strided
+
 
 #endif
