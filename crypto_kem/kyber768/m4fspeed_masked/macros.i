@@ -26,23 +26,9 @@
   usub16 \a, \a, \tmp
 .endm
 
-.macro doublebarrett_fast a, tmp, tmp2, q, barrettconst1, barrettconst2
- smlawb \tmp, \barrettconst1, \a, \barrettconst2
- smlabt \tmp, \q, \tmp, \a
- smlawt \tmp2, \barrettconst1, \a, \barrettconst2
- smulbt \tmp2, \q, \tmp2
- add    \tmp2, \a, \tmp2, lsl#16
- pkhbt  \a, \tmp, \tmp2
-.endm
-
 .macro montgomery q, qinv, a, tmp
   smulbt \tmp, \a, \qinv
   smlabb \tmp, \q, \tmp, \a
-.endm
-
-.macro montgomery_inplace q, qinv, a, tmp
-  smulbt \tmp, \a, \qinv
-  smlabb \a, \q, \tmp, \a
 .endm
 
 .macro doublemontgomery a, tmp, tmp2, q, qinv, montconst

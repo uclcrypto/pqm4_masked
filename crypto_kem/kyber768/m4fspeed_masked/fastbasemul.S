@@ -1,180 +1,275 @@
-#include "macros.i"
 .syntax unified
 .cpu cortex-m4
 .thumb
 
-// void basemul_asm_opt_16_32(int32_t *, const int16_t *, const int16_t *, const int16_t *)
-.global basemul_asm_opt_16_32
-.type basemul_asm_opt_16_32, %function
-.align 2
-basemul_asm_opt_16_32:
-  push {r4-r11, lr}
-  
-  rptr_tmp  .req r0
-  aptr      .req r1
-  bptr      .req r2
-  aprimeptr .req r3
-  poly0     .req r4
-  poly1     .req r6
-  poly2     .req r5
-  poly3     .req r7
-  q         .req r8
-  qinv      .req r8
-  tmp       .req r9
-  tmp2      .req r10
-  tmp3      .req r11
-  loop      .req r14
+.macro montgomery q, qinv, a, tmp
+  smulbt \tmp, \a, \qinv
+  smlabb \tmp, \q, \tmp, \a
+.endm
 
-  movw q, #3329
+
+.global doublebasemul_asm
+.type doublebasemul_asm, %function
+.align 2
+doublebasemul_asm:
+  push {r4-r11, lr}
+
+  rptr  .req r0
+  aptr  .req r1
+  bptr  .req r2
+  zeta  .req r3
+  poly0 .req r4
+  poly1 .req r6
+  poly2 .req r5
+  poly3 .req r7
+  q     .req r8
+  qinv  .req r8
+  tmp   .req r9
+  tmp2  .req r10
+  tmp3  .req r11
+
+  movw  q, #3329
   movt qinv, #3327
 
-  movw loop, #64
-  1:
-    ldr poly0, [aptr], #4
-    ldr poly1, [bptr], #4
-    ldr poly2, [aptr], #4
-    ldr poly3, [bptr], #4
-    ldr.w tmp3, [aprimeptr, #4]
-    ldr tmp2, [aprimeptr], #8
-    
-    // (poly0_t * zeta) * poly1_t + poly0_b * poly0_t
-    smuad tmp2, tmp2, poly1
-    str tmp2, [rptr_tmp], #4
+  ldrd poly0, poly2, [aptr], #8
+  ldrd poly1, poly3, [bptr], #8
 
-    // poly1_t * poly0_b + poly1_b * poly0_t
-    smuadx tmp, poly0, poly1
-    str tmp, [rptr_tmp], #4
-    
-    smuad tmp2, tmp3, poly3
-    str tmp2, [rptr_tmp], #4
+  //basemul(r->coeffs + 4 * i, a->coeffs + 4 * i, b->coeffs + 4 * i, zetas[64 + i]);
+  smultt tmp, poly0, poly1
+  montgomery q, qinv, tmp, tmp2
+  smultb tmp2, tmp2, zeta
+  smlabb tmp2, poly0, poly1, tmp2
+  montgomery q, qinv, tmp2, tmp
+  // r[0] in upper half of tmp
 
-    smuadx tmp2, poly2, poly3
-    str tmp2, [rptr_tmp], #4
+  smuadx tmp2, poly0, poly1
+  montgomery q, qinv, tmp2, tmp3
+  // r[1] in upper half of tmp3
+  pkhtb tmp, tmp3, tmp, asr#16
+  str tmp, [rptr], #4
 
-    subs.w loop, #1
-  bne.w 1b
+  neg zeta, zeta
+
+  //basemul(r->coeffs + 4 * i + 2, a->coeffs + 4 * i + 2, b->coeffs + 4 * i + 2, - zetas[64 + i]);
+  smultt tmp, poly2, poly3
+  montgomery q, qinv, tmp, tmp2
+  smultb tmp2, tmp2, zeta
+  smlabb tmp2, poly2, poly3, tmp2
+  montgomery q, qinv, tmp2, tmp
+  // r[0] in upper half of tmp
+
+  smuadx tmp2, poly2, poly3
+  montgomery q, qinv, tmp2, tmp3
+  // r[1] in upper half of tmp3
+  pkhtb tmp, tmp3, tmp, asr#16
+  str tmp, [rptr], #4
 
   pop {r4-r11, pc}
 
-// void basemul_asm_acc_opt_32_32(int32_t *, const int16_t *, const int16_t *, const int16_t *)
-.global basemul_asm_acc_opt_32_32
-.type basemul_asm_acc_opt_32_32, %function
+
+.global doublebasemul_asm_acc
+.type doublebasemul_asm_acc, %function
 .align 2
-basemul_asm_acc_opt_32_32:
-  push {r4-r10, lr}
-
-  rptr_tmp  .req r0
-  aptr      .req r1
-  bptr      .req r2
-  aprimeptr .req r3
-  poly0     .req r4
-  poly1     .req r6
-  res0      .req r5
-  res1      .req r7
-  q         .req r8
-  qinv      .req r8
-  tmp       .req r9
-  tmp2      .req r10
-  loop      .req r14
-
-  movw q, #3329
-  movt qinv, #3327
-
-  movw loop, #64
-  1:
-    ldr poly0, [aptr], #4
-    ldr poly1, [bptr], #4
-    ldr.w res0, [rptr_tmp]
-    ldr tmp2, [aprimeptr], #4
-    ldr.w res1, [rptr_tmp, #4]
-
-    // (poly0_t * zeta) * poly1_t + poly0_b * poly0_t + res
-    smlad tmp2, tmp2, poly1, res0
-    str tmp2, [rptr_tmp], #4
-
-    // poly1_t * poly0_b + poly1_b * poly0_t + res
-    smladx tmp, poly0, poly1, res1
-    str tmp, [rptr_tmp], #4
-
-    ldr poly0, [aptr], #4
-    ldr poly1, [bptr], #4
-    ldr.w res0, [rptr_tmp]
-    ldr tmp2, [aprimeptr], #4
-    ldr.w res1, [rptr_tmp, #4]
-    
-    smlad tmp2, tmp2, poly1, res0
-    str tmp2, [rptr_tmp], #4
-
-    smladx tmp, poly0, poly1, res1
-    str tmp, [rptr_tmp], #4
-
-    subs.w loop, #1
-  bne.w 1b
-
-  pop {r4-r10, pc}
-
-.unreq rptr_tmp
-
-// void basemul_asm_acc_opt_32_16(int16_t *, const int16_t *, const int16_t *, const int16_t *, const int32_t *)
-.global basemul_asm_acc_opt_32_16
-.type basemul_asm_acc_opt_32_16, %function
-.align 2
-basemul_asm_acc_opt_32_16:
+doublebasemul_asm_acc:
   push {r4-r11, lr}
 
-  rptr      .req r0
-  aptr      .req r1
-  bptr      .req r2
-  aprimeptr .req r3
-  poly0     .req r4
-  poly1     .req r6
-  res0      .req r5
-  res1      .req r7
-  q         .req r8
-  qinv      .req r8
-  tmp       .req r9
-  tmp2      .req r10
-  rptr_tmp  .req r11
-  loop      .req r14
+  rptr  .req r0
+  aptr  .req r1
+  bptr  .req r2
+  zeta  .req r3
+  poly0 .req r4
+  poly1 .req r6
+  poly2 .req r5
+  poly3 .req r7
+  q     .req r8
+  qinv  .req r8
+  tmp   .req r9
+  tmp2  .req r10
+  tmp3  .req r11
+  r0r1  .req r12
+  r2r3  .req r14
 
-  movw q, #3329
+  movw  q, #3329
   movt qinv, #3327
-  ldr rptr_tmp, [sp, #9*4]
-  movw loop, #64
-  1:
-    ldr poly0, [aptr], #4
-    ldr poly1, [bptr], #4
-    ldr.w res0, [rptr_tmp], #4
-    ldr tmp2, [aprimeptr], #4
-    ldr.w res1, [rptr_tmp], #4
 
-    // (poly0_t * zeta) * poly1_t + poly0_b * poly0_t + res
-    smlad tmp2, tmp2, poly1, res0
-    montgomery q, qinv, tmp2, res0
+  ldrd poly0, poly2, [aptr], #8
+  ldrd poly1, poly3, [bptr], #8
+  ldrd r0r1, r2r3, [rptr]
 
-    // poly1_t * poly0_b + poly1_b * poly0_t + res
-    smladx tmp2, poly0, poly1, res1
-    montgomery q, qinv, tmp2, res1
+  //basemul(r->coeffs + 4 * i, a->coeffs + 4 * i, b->coeffs + 4 * i, zetas[64 + i]);
+  smultt tmp, poly0, poly1
+  montgomery q, qinv, tmp, tmp2
+  smultb tmp2, tmp2, zeta
+  smlabb tmp2, poly0, poly1, tmp2
+  montgomery q, qinv, tmp2, tmp
+  // r[0] in upper half of tmp
 
-    pkhtb res0, res1, res0, asr#16
-    str res0, [rptr], #4
+  smuadx tmp2, poly0, poly1
+  montgomery q, qinv, tmp2, tmp3
+  // r[1] in upper half of tmp3
+  pkhtb tmp, tmp3, tmp, asr#16
+  uadd16 r0r1, r0r1, tmp
+  str r0r1, [rptr], #4
 
-    ldr poly0, [aptr], #4
-    ldr poly1, [bptr], #4
-    ldr.w res0, [rptr_tmp], #4
-    ldr tmp2, [aprimeptr], #4     
-    ldr.w res1, [rptr_tmp], #4
-    
-    smlad tmp2, tmp2, poly1, res0
-    montgomery q, qinv, tmp2, res0
-    
-    smladx tmp2, poly0, poly1, res1
-    montgomery q, qinv, tmp2, res1
+  neg zeta, zeta
 
-    pkhtb res0, res1, res0, asr#16
-    str res0, [rptr], #4
+  //basemul(r->coeffs + 4 * i + 2, a->coeffs + 4 * i + 2, b->coeffs + 4 * i + 2, - zetas[64 + i]);
+  smultt tmp, poly2, poly3
+  montgomery q, qinv, tmp, tmp2
+  smultb tmp2, tmp2, zeta
+  smlabb tmp2, poly2, poly3, tmp2
+  montgomery q, qinv, tmp2, tmp
+  // r[0] in upper half of tmp
 
-    subs.w loop, #1
-  bne.w 1b
+  smuadx tmp2, poly2, poly3
+  montgomery q, qinv, tmp2, tmp3
+  // r[1] in upper half of tmp3
+  pkhtb tmp, tmp3, tmp, asr#16
+  uadd16 r2r3, r2r3, tmp
+  str r2r3, [rptr], #4
 
   pop {r4-r11, pc}
+
+
+.global basemul_asm
+.type basemul_asm, %function
+.align 2
+basemul_asm:
+    push {r4-r11, lr}
+
+    .unreq zeta
+    rptr    .req r0
+    aptr    .req r1
+    bptr    .req r2
+    zetaptr .req r3
+    poly0   .req r4
+    poly1   .req r6
+    poly2   .req r5
+    poly3   .req r7
+    q       .req r8
+    qinv    .req r8
+    tmp     .req r9
+    tmp2    .req r10
+    tmp3    .req r11
+    zeta    .req r12
+    loop    .req r14
+
+    movw q, #3329
+    movt qinv, #3327
+
+    movw loop, #64
+    1:
+      ldr poly0, [aptr], #4
+      ldr poly1, [bptr], #4
+      ldr poly2, [aptr], #4
+      ldr poly3, [bptr], #4
+
+      ldrh zeta, [zetaptr], #2
+
+      // basemul(r->coeffs + 4 * i, a->coeffs + 4 * i, b->coeffs + 4 * i, zetas[64 + i]);
+      smultt tmp, poly0, poly1
+      montgomery q, qinv, tmp, tmp2
+      smultb tmp2, tmp2, zeta
+      smlabb tmp2, poly0, poly1, tmp2
+      montgomery q, qinv, tmp2, tmp
+      // r[0] in upper half of tmp
+
+      smuadx tmp2, poly0, poly1
+      montgomery q, qinv, tmp2, tmp3
+      // r[1] in upper half of tmp3
+      pkhtb tmp, tmp3, tmp, asr#16
+      str tmp, [rptr], #4
+
+      neg zeta, zeta
+
+      // basemul(r->coeffs + 4 * i + 2, a->coeffs + 4 * i + 2, b->coeffs + 4 * i + 2, - zetas[64 + i]);
+      smultt tmp, poly2, poly3
+      montgomery q, qinv, tmp, tmp2
+      smultb tmp2, tmp2, zeta
+      smlabb tmp2, poly2, poly3, tmp2
+      montgomery q, qinv, tmp2, tmp
+      // r[0] in upper half of tmp
+
+      smuadx tmp2, poly2, poly3
+      montgomery q, qinv, tmp2, tmp3
+      // r[1] in upper half of tmp3
+      pkhtb tmp, tmp3, tmp, asr#16
+      str tmp, [rptr], #4
+
+      subs.w loop, #1
+    bne.w 1b
+
+    pop {r4-r11, pc}
+
+
+.global basemul_asm_acc
+.type basemul_asm_acc, %function
+.align 2
+basemul_asm_acc:
+    push {r4-r11, lr}
+
+    rptr    .req r0
+    aptr    .req r1
+    bptr    .req r2
+    zetaptr .req r3
+    poly0   .req r4
+    poly1   .req r6
+    poly2   .req r5
+    poly3   .req r7
+    q       .req r8
+    qinv    .req r8
+    tmp     .req r9
+    tmp2    .req r10
+    tmp3    .req r11
+    zeta    .req r12
+    loop    .req r14
+
+    movw q, #3329
+    movt qinv, #3327
+
+    movw loop, #64
+    1:
+
+      ldrd poly0, poly2, [aptr], #8
+      ldrd poly1, poly3, [bptr], #8
+
+      ldrh zeta, [zetaptr], #2
+
+      //basemul(r->coeffs + 4 * i, a->coeffs + 4 * i, b->coeffs + 4 * i, zetas[64 + i]);
+      smultt tmp, poly0, poly1
+      montgomery q, qinv, tmp, tmp2
+      smultb tmp2, tmp2, zeta
+      smlabb tmp2, poly0, poly1, tmp2
+      montgomery q, qinv, tmp2, tmp
+      // r[0] in upper half of tmp
+
+      smuadx tmp2, poly0, poly1
+      montgomery q, qinv, tmp2, tmp3
+      // r[1] in upper half of tmp3
+      pkhtb tmp, tmp3, tmp, asr#16
+      ldr tmp3, [rptr]
+      uadd16 tmp, tmp, tmp3
+      str tmp, [rptr], #4
+
+      neg zeta, zeta
+
+      //basemul(r->coeffs + 4 * i + 2, a->coeffs + 4 * i + 2, b->coeffs + 4 * i + 2, - zetas[64 + i]);
+      smultt tmp, poly2, poly3
+      montgomery q, qinv, tmp, tmp2
+      smultb tmp2, tmp2, zeta
+      smlabb tmp2, poly2, poly3, tmp2
+      montgomery q, qinv, tmp2, tmp
+      // r[0] in upper half of tmp
+
+      smuadx tmp2, poly2, poly3
+      montgomery q, qinv, tmp2, tmp3
+      // r[1] in upper half of tmp3
+      pkhtb tmp, tmp3, tmp, asr#16
+      ldr tmp3, [rptr]
+      uadd16 tmp, tmp, tmp3
+      str tmp, [rptr], #4
+
+      subs.w loop, #1
+    bne.w 1b
+
+    pop {r4-r11, pc}

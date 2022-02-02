@@ -27,9 +27,7 @@ int cmp_poly_packcompress(const unsigned char *r, poly *a, int i);
 
 void poly_tobytes(unsigned char *r, poly *a);
 void poly_frombytes(poly *r, const unsigned char *a);
-void poly_frombytes_mul_16_32(int32_t *r_tmp, const poly *b, const unsigned char *a);
-void poly_frombytes_mul_32_32(int32_t *r_tmp, const poly *b, const unsigned char *a);
-void poly_frombytes_mul_32_16(poly *r, const poly* b, const unsigned char *a, const int32_t *r_tmp);
+void poly_frombytes_mul(poly *r, const unsigned char *a);
 
 void poly_frommsg(poly *r, const unsigned char msg[KYBER_SYMBYTES]);
 void poly_tomsg(unsigned char msg[KYBER_SYMBYTES], poly *a);
@@ -38,9 +36,8 @@ void poly_noise(poly *r, const unsigned char *seed, unsigned char nonce, int add
 
 void poly_ntt(poly *r);
 void poly_invntt(poly *r);
-void poly_basemul_opt_16_32(int32_t *r, const poly *a, const poly *b, const poly *a_prime);
-void poly_basemul_acc_opt_32_32(int32_t *r_tmp, const poly *a, const poly *b, const poly *a_prime);
-void poly_basemul_acc_opt_32_16(poly *r, const poly *a, const poly *b, const poly *a_prime, const int32_t * r_tmp);
+void poly_basemul(poly *r, const poly *a, const poly *b);
+void poly_basemul_acc(poly *r, const poly *a, const poly *b);
 void poly_frommont(poly *r);
 
 void poly_reduce(poly *r);

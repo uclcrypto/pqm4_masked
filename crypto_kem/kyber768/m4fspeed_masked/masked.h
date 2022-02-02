@@ -17,5 +17,4 @@ typedef APoly APolyVec[KYBER_K]; // dense
 typedef Coef StrAPoly[NSHARES][KYBER_N]; // strided
 typedef StrAPoly StrAPolyVec[KYBER_K]; // strided
 
-
 #endif

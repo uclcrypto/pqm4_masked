@@ -8,7 +8,8 @@
 inline uint32_t get_random(){
     while (1) {
         if ((RNG_SR & RNG_SR_DRDY) == 1){  // check if data is ready
-            return RNG_DR;
+            //return RNG_DR;
+            return 0;
         }
     }
     return 0;

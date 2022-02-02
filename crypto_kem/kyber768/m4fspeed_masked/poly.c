@@ -21,7 +21,18 @@ void poly_compress(unsigned char *r, poly *a)
   uint8_t t[8];
   int i,j,k=0;
 
-#if (KYBER_POLYCOMPRESSEDBYTES == 128)
+#if (KYBER_POLYCOMPRESSEDBYTES == 96)
+  for(i=0;i<KYBER_N;i+=8)
+  {
+    for(j=0;j<8;j++)
+      t[j] = ((((uint32_t)a->coeffs[i+j] << 3) + KYBER_Q/2) / KYBER_Q) & 7;
+
+    r[k]   =  t[0]       | (t[1] << 3) | (t[2] << 6);
+    r[k+1] = (t[2] >> 2) | (t[3] << 1) | (t[4] << 4) | (t[5] << 7);
+    r[k+2] = (t[5] >> 1) | (t[6] << 2) | (t[7] << 5);
+    k += 3;
+  }
+#elif (KYBER_POLYCOMPRESSEDBYTES == 128)
   for(i=0;i<KYBER_N;i+=8)
   {
     for(j=0;j<8;j++)
@@ -47,7 +58,7 @@ void poly_compress(unsigned char *r, poly *a)
     k += 5;
   }
 #else
-#error "KYBER_POLYCOMPRESSEDBYTES needs to be in {128, 160}"
+#error "KYBER_POLYCOMPRESSEDBYTES needs to be in {96, 128, 160}"
 #endif
 }
 
@@ -63,7 +74,20 @@ void poly_compress(unsigned char *r, poly *a)
 void poly_decompress(poly *r, const unsigned char *a)
 {
   int i;
-#if (KYBER_POLYCOMPRESSEDBYTES == 128)
+#if (KYBER_POLYCOMPRESSEDBYTES == 96)
+  for(i=0;i<KYBER_N;i+=8)
+  {
+    r->coeffs[i+0] =  (((a[0] & 7) * KYBER_Q) + 4) >> 3;
+    r->coeffs[i+1] = ((((a[0] >> 3) & 7) * KYBER_Q) + 4) >> 3;
+    r->coeffs[i+2] = ((((a[0] >> 6) | ((a[1] << 2) & 4)) * KYBER_Q) + 4) >> 3;
+    r->coeffs[i+3] = ((((a[1] >> 1) & 7) * KYBER_Q) + 4) >> 3;
+    r->coeffs[i+4] = ((((a[1] >> 4) & 7) * KYBER_Q) + 4) >> 3;
+    r->coeffs[i+5] = ((((a[1] >> 7) | ((a[2] << 1) & 6)) * KYBER_Q) + 4) >> 3;
+    r->coeffs[i+6] = ((((a[2] >> 2) & 7) * KYBER_Q) + 4) >> 3;
+    r->coeffs[i+7] = ((((a[2] >> 5)) * KYBER_Q) + 4) >> 3;
+    a += 3;
+  }
+#elif (KYBER_POLYCOMPRESSEDBYTES == 128)
   for(i=0;i<KYBER_N;i+=8)
   {
     r->coeffs[i+0] = (((a[0] & 15) * KYBER_Q) + 8) >> 4;
@@ -90,7 +114,7 @@ void poly_decompress(poly *r, const unsigned char *a)
     a += 5;
   }
 #else
-#error "KYBER_POLYCOMPRESSEDBYTES needs to be in {128, 160}"
+#error "KYBER_POLYCOMPRESSEDBYTES needs to be in {96, 128, 160}"
 #endif
 }
 
@@ -197,7 +221,18 @@ int cmp_poly_compress(const unsigned char *r, poly *a) {
     uint8_t t[8];
     int i, j, k = 0;
 
-#if (KYBER_POLYCOMPRESSEDBYTES == 128)
+#if (KYBER_POLYCOMPRESSEDBYTES == 96)
+    for(i=0;i<KYBER_N;i+=8)
+    {
+      for(j=0;j<8;j++)
+        t[j] = ((((uint32_t)a->coeffs[i+j] << 3) + KYBER_Q/2) / KYBER_Q) & 7;
+
+      rc |= r[k]   ^ (t[0]       | (t[1] << 3) | (t[2] << 6));
+      rc |= r[k+1] ^ ((t[2] >> 2) | (t[3] << 1) | (t[4] << 4) | (t[5] << 7));
+      rc |= r[k+2] ^ ((t[5] >> 1) | (t[6] << 2) | (t[7] << 5));
+      k += 3;
+    }
+#elif (KYBER_POLYCOMPRESSEDBYTES == 128)
     for (i = 0; i < KYBER_N; i += 8) {
         for (j = 0; j < 8; j++)
             t[j] = ((((uint32_t)a->coeffs[i + j] << 4) + KYBER_Q / 2) / KYBER_Q) & 15;
@@ -222,7 +257,7 @@ int cmp_poly_compress(const unsigned char *r, poly *a) {
       k += 5;
     }
 #else
-#error "KYBER_POLYCOMPRESSEDBYTES needs to be in {128, 160}"
+#error "KYBER_POLYCOMPRESSEDBYTES needs to be in {96, 128, 160}"
 #endif
     return rc;
 }
@@ -320,47 +355,28 @@ void poly_frombytes(poly *r, const unsigned char *a) {
     }
 }
 
-/*************************************************
-* Name:        poly_frombytes_mul_16_32
-*
-* Description: Multiplication of a polynomial with a de-serialization of another polynomial
-*              Using strategy of better accumulation.
-* Arguments:   - const poly *b:          pointer to input polynomial
-*              - int32_t *r_tmp:         array for accumulating unreduced results
-*              - const unsigned char *a: pointer to input byte array (of KYBER_POLYBYTES bytes)
-**************************************************/
-extern void frombytes_mul_asm_16_32(int32_t *r_tmp, const int16_t *b, const unsigned char *c, const int16_t zetas[64]);
-void poly_frombytes_mul_16_32(int32_t *r_tmp, const poly *b, const unsigned char *a) {
-    frombytes_mul_asm_16_32(r_tmp, b->coeffs, a, zetas);
-}
 
+extern void doublebasemul_asm(int16_t *r, const int16_t *a, const int16_t *b, int16_t zeta);
 /*************************************************
-* Name:        poly_frombytes_mul_32_32
+* Name:        poly_frombytes_mul
 *
 * Description: Multiplication of a polynomial with a de-serialization of another polynomial
-*              Using strategy of better accumulation.
-* Arguments:   - const poly *b:          pointer to input polynomial
-*              - int32_t *r_tmp:         array for accumulating unreduced results
-*              - const unsigned char *a: pointer to input byte array (of KYBER_POLYBYTES bytes)
-**************************************************/
-extern void frombytes_mul_asm_acc_32_32(int32_t *r_tmp, const int16_t *b, const unsigned char *c, const int16_t zetas[64]);
-void poly_frombytes_mul_32_32(int32_t *r_tmp, const poly *b, const unsigned char *a) {
-    frombytes_mul_asm_acc_32_32(r_tmp, b->coeffs, a, zetas);
-}
-
-/*************************************************
-* Name:        poly_frombytes_mul_32_16
 *
-* Description: Multiplication of a polynomial with a de-serialization of another polynomial
-*              Using strategy of better accumulation.
 * Arguments:   - poly *r:                pointer to output polynomial
-*              - const poly *b:          pointer to input polynomial
-*              - const int32_t *r_tmp:   array containing unreduced results
 *              - const unsigned char *a: pointer to input byte array (of KYBER_POLYBYTES bytes)
 **************************************************/
-extern void frombytes_mul_asm_acc_32_16(int16_t *r, const int16_t *b, const unsigned char *c, const int16_t zetas[64], const int32_t *r_tmp);
-void poly_frombytes_mul_32_16(poly *r, const poly* b, const unsigned char *a, const int32_t *r_tmp) {
-    frombytes_mul_asm_acc_32_16(r->coeffs, b->coeffs, a, zetas, r_tmp);
+void poly_frombytes_mul(poly *r, const unsigned char *a) {
+    int16_t tmp[4];
+    int i;
+
+    for (i = 0; i < KYBER_N / 4; i++) {
+        tmp[0] = a[6 * i]          | ((uint16_t)a[6 * i + 1] & 0x0f) << 8;
+        tmp[1] = a[6 * i + 1] >> 4 | ((uint16_t)a[6 * i + 2] & 0xff) << 4;
+        tmp[2] = a[6 * i + 3]      | ((uint16_t)a[6 * i + 4] & 0x0f) << 8;
+        tmp[3] = a[6 * i + 4] >> 4 | ((uint16_t)a[6 * i + 5] & 0xff) << 4;
+
+        doublebasemul_asm(&r->coeffs[4*i], &r->coeffs[4*i], tmp, zetas[i]);
+    }
 }
 
 /*************************************************
@@ -380,55 +396,6 @@ void poly_noise(poly *r, const unsigned char *seed, unsigned char nonce, int add
 
     prf(buf, KYBER_ETA * KYBER_N / 4, seed, nonce);
     cbd(r, buf, add);
-}
-
-/*************************************************
-* Name:        poly_basemul_opt_16_32
-*
-* Description: Multiplication of two polynomials using asymmetric multiplication.
-*              Cached values are generated during matrix-vector product.
-*              Using strategy of better accumulation (initial step).
-* Arguments:   - const poly *a:       pointer to input polynomial
-*              - const poly *b:       pointer to input polynomial
-*              - const poly *a_prime: pointer to a pre-multiplied by zetas 
-*              - int32_t *r_tmp:      array for accumulating unreduced results
-**************************************************/
-extern void basemul_asm_opt_16_32(int32_t *, const int16_t *, const int16_t *, const int16_t *);
-void poly_basemul_opt_16_32(int32_t *r_tmp, const poly *a, const poly *b, const poly *a_prime) {
-    basemul_asm_opt_16_32(r_tmp, a->coeffs, b->coeffs, a_prime->coeffs);
-}
-
-/*************************************************
-* Name:        poly_basemul_acc_opt_32_32
-*
-* Description: Multiplication of two polynomials using asymmetric multiplication.
-*              Cached values are generated during matrix-vector product.
-*              Using strategy of better accumulation.
-* Arguments:   - const poly *a:       pointer to input polynomial
-*              - const poly *b:       pointer to input polynomial
-*              - const poly *a_prime: pointer to a pre-multiplied by zetas 
-*              - int32_t *r_tmp:      array for accumulating unreduced results
-**************************************************/
-extern void basemul_asm_acc_opt_32_32(int32_t *, const int16_t *, const int16_t *, const int16_t *);
-void poly_basemul_acc_opt_32_32(int32_t *r_tmp, const poly *a, const poly *b, const poly *a_prime) {
-    basemul_asm_acc_opt_32_32(r_tmp, a->coeffs, b->coeffs, a_prime->coeffs);
-}
-
-/*************************************************
-* Name:        poly_basemul_acc_opt_32_16
-*
-* Description: Multiplication of two polynomials using asymmetric multiplication.
-*              Cached values are generated during matrix-vector product.
-*              Using strategy of better accumulation (final step).
-* Arguments:   - const poly *a:       pointer to input polynomial
-*              - const poly *b:       pointer to input polynomial
-*              - const poly *a_prime: pointer to a pre-multiplied by zetas 
-*              - poly *r:             pointer to output polynomial
-*              - int32_t *r_tmp:      array for accumulating unreduced results
-**************************************************/
-extern void basemul_asm_acc_opt_32_16(int16_t *, const int16_t *, const int16_t *, const int16_t *, const int32_t *);
-void poly_basemul_acc_opt_32_16(poly *r, const poly *a, const poly *b, const poly *a_prime, const int32_t * r_tmp) {
-    basemul_asm_acc_opt_32_16(r->coeffs, a->coeffs, b->coeffs, a_prime->coeffs, r_tmp);
 }
 
 /*************************************************
@@ -455,6 +422,34 @@ void poly_ntt(poly *r) {
 **************************************************/
 void poly_invntt(poly *r) {
     invntt(r->coeffs);
+}
+
+extern void basemul_asm(int16_t *, const int16_t *, const int16_t *, const int16_t *);
+/*************************************************
+* Name:        poly_basemul
+*
+* Description: Multiplication of two polynomials in NTT domain
+*
+* Arguments:   - poly *r:       pointer to output polynomial
+*              - const poly *a: pointer to first input polynomial
+*              - const poly *b: pointer to second input polynomial
+**************************************************/
+void poly_basemul(poly *r, const poly *a, const poly *b) {
+    basemul_asm(r->coeffs, a->coeffs, b->coeffs, zetas);
+}
+
+extern void basemul_asm_acc(int16_t *, const int16_t *, const int16_t *, const int16_t *);
+/*************************************************
+* Name:        poly_basemul_acc
+*
+* Description: Multiplication of two polynomials in NTT domain, accumulating
+*
+* Arguments:   - poly *r:       pointer to output polynomial
+*              - const poly *a: pointer to first input polynomial
+*              - const poly *b: pointer to second input polynomial
+**************************************************/
+void poly_basemul_acc(poly *r, const poly *a, const poly *b) {
+    basemul_asm_acc(r->coeffs, a->coeffs, b->coeffs, zetas);
 }
 
 extern void asm_frommont(int16_t *r);
