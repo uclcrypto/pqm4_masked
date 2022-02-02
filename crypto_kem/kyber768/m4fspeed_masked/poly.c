@@ -520,6 +520,7 @@ void poly_sub(poly *r, const poly *a, const poly *b) {
 }
 void poly_sub_i16(int16_t *r, const int16_t *a, const int16_t *b) {
     pointwise_sub(r,a,b);
+
 }
 
 /*************************************************

@@ -189,7 +189,7 @@ void __attribute__ ((noinline)) masked_indcpa_dec(unsigned char *m, // secret
                                            const unsigned char *sk) { // secret
 
 
-    poly mp, bp, psk;
+    poly mp, bp, psk,tmp;
     poly *v = &bp;
     StrAPoly masked_psk,masked_mp,masked_bp;
     int d;
@@ -220,61 +220,23 @@ void __attribute__ ((noinline)) masked_indcpa_dec(unsigned char *m, // secret
     }
 
     masked_poly_invntt(masked_mp);
-    unmasked_poly(&mp,masked_mp);
 
     poly_decompress(v, c+KYBER_POLYVECCOMPRESSEDBYTES);
-    poly_sub(&mp, v, &mp);
+   
+    poly_sub_i16(masked_mp[0],v->coeffs,masked_mp[0]);
+    poly_reduce_i16(masked_mp[0]);
+    poly_zeroize(v);
+    for(d=1;d<NSHARES;d++){
+        // compute -mp for all the other shares
+        poly_sub_i16(masked_mp[d],v->coeffs,masked_mp[d]);
+        poly_reduce_i16(masked_mp[d]);
+    }
+   
+    // TODO polynomial compression
+    unmasked_poly(&mp,masked_mp);
+   
     poly_reduce(&mp);
-
     poly_tomsg(m, &mp);
 
     return;
-    /*
-    poly mp, bp;
-    poly *v = &bp;
-    poly psk;
-    StrAPoly masked_psk,masked_bp,masked_mp;
-    int d;
-
-    poly_unpackdecompress(&mp, c, 0);
-    poly_ntt(&mp);
-
-    // TODO handel masked private key sk
-    poly_frombytes(&psk,sk);
-    masked_poly(masked_psk,&psk);
-
-    for(d=0;d<NSHARES;d++){
-        poly_basemul_i16(masked_mp[d],mp.coeffs,masked_psk[d]);
-    }
-    unmasked_poly(&mp,masked_mp);
-    poly_tomsg(m, &mp);
-    for(int i = 1; i < KYBER_K; i++) {
-        poly_unpackdecompress(&bp, c, i);
-        poly_ntt(&bp);
-    
-        // TODO handel masked private key sk
-        poly_frombytes(&psk,sk + i*KYBER_POLYBYTES);
-        masked_poly(masked_psk,&psk);
- 
-        for(d=0;d<NSHARES;d++){
-            poly_basemul_i16(masked_bp[d],bp.coeffs,masked_psk[d]);
-            poly_add_i16(masked_mp[d],masked_mp[d],masked_bp[d]);
-        }
-    }
-
-    masked_poly_invntt(masked_mp);
-    
-    // unpack public ciphertext
-    poly_decompress(v, c+KYBER_POLYVECCOMPRESSEDBYTES);
-   
-
-    poly_sub_i16(masked_mp[0], v->coeffs, masked_mp[0]);
-    for(d=0;d<NSHARES;d++){
-        poly_reduce_i16(masked_mp[d]);
-    }
-
-    // TODO Mask this
-    unmasked_poly(&mp,masked_mp);
-    poly_tomsg(m, &mp);
-    */
 }
