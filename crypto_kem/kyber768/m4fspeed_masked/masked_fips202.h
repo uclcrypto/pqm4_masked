@@ -1,5 +1,5 @@
-#ifndef FIPS202_H
-#define FIPS202_H
+#ifndef MASKED_FIPS202_H
+#define MASKED_FIPS202_H
 
 #include <stddef.h>
 #include <stdint.h>

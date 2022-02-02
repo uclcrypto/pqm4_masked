@@ -3,7 +3,7 @@
 #include <stdint.h>
 #include "params.h"
 
-#define NSHARES 3
+#define NSHARES 2
 #define COEF_NBITS 12
 
 #define BSSIZE 32
@@ -16,5 +16,10 @@ typedef ACoef APoly[KYBER_N]; // dense
 typedef APoly APolyVec[KYBER_K]; // dense
 typedef Coef StrAPoly[NSHARES][KYBER_N]; // strided
 typedef StrAPoly StrAPolyVec[KYBER_K]; // strided
+
+
+#include <stdio.h>
+#include "hal.h"
+#define BAIL(...) do { char bail_buf[100]; sprintf(bail_buf, __VA_ARGS__); hal_send_str(bail_buf); hal_send_str("#"); } while (0)
 
 #endif

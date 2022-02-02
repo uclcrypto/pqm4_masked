@@ -51,6 +51,10 @@ void kyber_shake128_squeezeblocks(unsigned char *output, size_t nblocks, shake12
 *              - const unsigned char * key:  pointer to the key (of length KYBER_SYMBYTES)
 *              - const unsigned char nonce:  single-byte nonce (public PRF input)
 **************************************************/
+#include "masked.h"
+#include "masked_utils.h"
+#include "masked_fips202.h"
+
 void shake256_prf(unsigned char *output, size_t outlen, const unsigned char *key, unsigned char nonce) {
     unsigned char extkey[KYBER_SYMBYTES + 1];
     size_t i;
@@ -61,4 +65,30 @@ void shake256_prf(unsigned char *output, size_t outlen, const unsigned char *key
     extkey[i] = nonce;
 
     shake256(output, outlen, extkey, KYBER_SYMBYTES + 1);
+
+#if 1
+    unsigned char masked_extkey[NSHARES*(KYBER_SYMBYTES + 1)];
+    for (i=0; i<KYBER_SYMBYTES+1; i++) {
+        masked_extkey[i] = extkey[i];
+        for (size_t j=1; j<NSHARES; j++) {
+            unsigned char rnd = get_random() & 0xFF;
+            masked_extkey[i] ^= rnd;
+            masked_extkey[i+j*(KYBER_SYMBYTES+1)] = rnd;
+        }
+    }
+    unsigned char *masked_output = malloc(outlen*NSHARES);
+    masked_shake256(masked_output, outlen, outlen, 1, masked_extkey,
+            KYBER_SYMBYTES+1, KYBER_SYMBYTES+1, 1);
+    for (i=0; i<10; i++) {
+        unsigned char o = output[i];
+        output[i] = 0;
+        for (size_t j=0; j<NSHARES; j++) {
+            output[i] ^= masked_output[i+j*outlen];
+        }
+        if (o != output[i]) {
+            BAIL("ERROR out %i %x %x", i, o, output[i]);
+        }
+    }
+    free(masked_output);
+#endif
 }

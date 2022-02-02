@@ -2,12 +2,13 @@
 #define MASKED_KECCAKF1600_H
 
 #include <stdint.h>
+#include <stddef.h>
 #include "masked.h"
 
 #define KECCAK_NWORDS 25
 
 typedef uint64_t KeccakState[KECCAK_NWORDS];
-typedef KeccakF1660State MaskedKeccakState[NSHARES];
+typedef KeccakState MaskedKeccakState[NSHARES];
 
 void MaskedKeccakF1600_StateExtractBytes(
         const MaskedKeccakState state,
@@ -32,7 +33,7 @@ void MaskedKeccakF1600_StateXORBytes(
         size_t data_data_stride
         );
 void MaskedKeccakF1600_StatePermute(
-        MaskedKeccakState state,
+        MaskedKeccakState state
         );
 
 #endif

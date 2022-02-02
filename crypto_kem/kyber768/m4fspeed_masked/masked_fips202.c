@@ -71,7 +71,7 @@ static void masked_keccak_inc_absorb(
         m += r - s->xored_non_absorbed;
         s->xored_non_absorbed = 0;
 
-        KeccakF1600_StatePermute(s->state);
+        MaskedKeccakF1600_StatePermute(s->state);
     }
     MaskedKeccakF1600_StateXORBytes(
             s->state,
@@ -121,7 +121,7 @@ static void masked_keccak_inc_finalize(keccak_inc_ctx *s, uint32_t r, uint8_t p)
  *              - size_t h_msk_stride: stride of h shares.
  *              - size_t h_data_stride: stride of h data bytes.
  **************************************************/
-static void keccak_inc_squeeze(
+static void masked_keccak_inc_squeeze(
         keccak_inc_ctx *s,
         uint32_t r,
         uint8_t *h,
@@ -135,7 +135,7 @@ static void keccak_inc_squeeze(
     } else {
         len = s->xored_non_absorbed;
     }
-    MaksedKeccakF1600_StateExtractBytes(
+    MaskedKeccakF1600_StateExtractBytes(
             s->state,
             h,
             r-s->xored_non_absorbed,
@@ -148,13 +148,13 @@ static void keccak_inc_squeeze(
 
     /* Then squeeze the remaining necessary blocks */
     while (outlen > 0) {
-        MaskedKeccakF1600_StatePermute(s_inc);
+        MaskedKeccakF1600_StatePermute(s->state);
         if(outlen < r) {
             len = outlen;
         } else {
             len = r;
         }
-        MaksedKeccakF1600_StateExtractBytes(
+        MaskedKeccakF1600_StateExtractBytes(
                 s->state,
                 h,
                 0,
@@ -182,12 +182,12 @@ static void keccak_inc_squeeze(
  *              - size_t in_msk_stride: stride of input shares.
  *              - size_t in_data_stride: stride of input data bytes.
  **************************************************/
-void maksed_shake256(
+void masked_shake256(
         uint8_t *output, size_t outlen, size_t out_msk_stride, size_t out_data_stride,
         const uint8_t *input, size_t inlen, size_t in_msk_stride, size_t in_data_stride
         ) {
   keccak_inc_ctx state;
-  keccak_inc_init(&state);
+  masked_keccak_inc_init(&state);
   /* Absorb input */
   masked_keccak_inc_absorb(&state, SHAKE256_RATE, input, inlen, in_msk_stride, in_data_stride);
   masked_keccak_inc_finalize(&state, SHAKE256_RATE, 0x1F);
@@ -213,7 +213,7 @@ void masked_sha3_512(
         const uint8_t *input, size_t inlen, size_t in_msk_stride, size_t in_data_stride
         ) {
   keccak_inc_ctx state;
-  keccak_inc_init(&state);
+  masked_keccak_inc_init(&state);
   /* Absorb input */
   masked_keccak_inc_absorb(&state, SHA3_512_RATE, input, inlen, in_msk_stride, in_data_stride);
   masked_keccak_inc_finalize(&state, SHA3_512_RATE, 0x06);

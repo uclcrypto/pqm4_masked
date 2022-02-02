@@ -6,6 +6,7 @@
 #include <assert.h>
 #include "masked.h"
 #include "masked_keccakf1600.h"
+#include "gadgets.h"
 
 #define NROUNDS 24
 
@@ -85,13 +86,35 @@ static const uint64_t RC[24] = \
   v = 0;            \
   REPEAT5(e; v += s;)
 
-void KeccakF1600_StatePermute(KeccakState state) {
+static void unmask_state(KeccakState st, const MaskedKeccakState msk_st) {
+    for (size_t i=0; i<KECCAK_NWORDS; i++) {
+        st[i] = 0;
+        for (size_t j=0; j<NSHARES; j++) {
+            st[i] ^= msk_st[j][i];
+        }
+    }
+}
+void disp_keccak_state(uint64_t *st) {
+    (void)(st); // for warning
+#if 0
+    char buf[120];
+    for (size_t j=0; j<KECCAK_NWORDS; j+=5) {
+        sprintf(buf, "\t%llx %llx %llx %llx %llx", st[j+0], st[j+1], st[j+2], st[j+3], st[j+4]);
+        hal_send_str(buf);
+    }
+#endif
+}
+
+void MaskedKeccakF1600_StatePermute(MaskedKeccakState state) {
+    KeccakState umsk;
+    unmask_state(umsk, state);
+    disp_keccak_state(umsk);
   uint8_t x, y;
 
   for (int i = 0; i < NROUNDS; i++) {
       // Sharewise implementation for Theta, Rho and phi
       for (int j=0; j<NSHARES; j++) {
-        uint64_t* a = state+j*KECCAK_NWORDS;
+        uint64_t* a = &state[j][0];
         uint64_t b[5];
         uint64_t t = 0;
         // Theta
@@ -149,6 +172,8 @@ void KeccakF1600_StatePermute(KeccakState state) {
       }
       // Iota
       // Add constant: on a single share
-      *state ^= RC[i];
+      state[0][0] ^= RC[i];
   }
+    unmask_state(umsk, state);
+    disp_keccak_state(umsk);
 }
