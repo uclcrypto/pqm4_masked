@@ -2,6 +2,7 @@
 #define GADGETS_H
 
 #include <stdint.h>
+#include <stddef.h>
 #include "masked.h"
 
 void masked_xor(

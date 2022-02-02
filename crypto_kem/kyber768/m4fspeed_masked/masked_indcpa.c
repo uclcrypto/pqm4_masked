@@ -191,7 +191,7 @@ void __attribute__ ((noinline)) masked_indcpa_dec(unsigned char *m, // secret
 
     poly mp, bp, psk;
     poly *v = &bp;
-    StrAPoly masked_psk,masked_mp;
+    StrAPoly masked_psk,masked_mp,masked_bp;
     int d;
     poly_unpackdecompress(&mp, c, 0);
     poly_ntt(&mp);
@@ -209,11 +209,19 @@ void __attribute__ ((noinline)) masked_indcpa_dec(unsigned char *m, // secret
     for(int i = 1; i < KYBER_K; i++) {
         poly_unpackdecompress(&bp, c, i);
         poly_ntt(&bp);
-        poly_frombytes_mul(&bp, sk + i*KYBER_POLYBYTES);
-        poly_add(&mp, &mp, &bp);
+
+        poly_frombytes(&psk,sk + i* KYBER_POLYBYTES);
+        masked_poly(masked_psk,&psk);
+
+        for(d=0;d<NSHARES;d++){
+            poly_basemul_i16(masked_bp[d],bp.coeffs,masked_psk[d]);
+            poly_add_i16(masked_mp[d],masked_mp[d],masked_bp[d]);
+        }
     }
 
-    poly_invntt(&mp);
+    masked_poly_invntt(masked_mp);
+    unmasked_poly(&mp,masked_mp);
+
     poly_decompress(v, c+KYBER_POLYVECCOMPRESSEDBYTES);
     poly_sub(&mp, v, &mp);
     poly_reduce(&mp);
