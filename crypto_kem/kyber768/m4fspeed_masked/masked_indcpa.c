@@ -189,7 +189,7 @@ void __attribute__ ((noinline)) masked_indcpa_dec(unsigned char *m, // secret
                                            const unsigned char *sk) { // secret
 
 
-    poly mp, bp, psk,tmp;
+    poly mp, bp, psk;
     poly *v = &bp;
     StrAPoly masked_psk,masked_mp,masked_bp;
     int d;
@@ -204,6 +204,7 @@ void __attribute__ ((noinline)) masked_indcpa_dec(unsigned char *m, // secret
     for(d=0;d<NSHARES;d++){
         poly_basemul_i16(masked_mp[d],mp.coeffs,masked_psk[d]);
     }
+
     unmasked_poly(&mp,masked_mp);
 
     for(int i = 1; i < KYBER_K; i++) {

@@ -1,6 +1,7 @@
 #include <stdint.h>
 #include "masked.h"
 #include "gadgets.h"
+#include "masked_utils.h"
 
 static inline uint32_t pini_and_core(uint32_t a, uint32_t b, uint32_t r) {
     uint32_t temp;
