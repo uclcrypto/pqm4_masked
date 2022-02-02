@@ -52,3 +52,13 @@ void masked_xor(
         out[i*out_stride] = ina[i*ina_stride] ^ inb[i*inb_stride];
     }
 }
+
+void copy_sharing(
+        size_t nshares,
+        uint32_t *out, size_t out_stride,
+        const uint32_t *in, size_t in_stride
+        ) {
+    for (size_t i=0; i<nshares; i++){
+        out[i*out_stride] = in[i*in_stride];
+    }
+}

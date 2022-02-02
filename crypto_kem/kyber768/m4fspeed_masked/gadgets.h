@@ -17,5 +17,10 @@ void masked_and(
         const uint32_t *a, size_t a_stride,
         const uint32_t *b, size_t b_stride
         );
+void copy_sharing(
+        size_t nshares,
+        uint32_t *out, size_t out_stride,
+        const uint32_t *in, size_t in_stride
+        );
 
 #endif // GADGETS_H
