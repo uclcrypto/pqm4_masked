@@ -483,6 +483,10 @@ extern void asm_barrett_reduce(int16_t *r);
 void poly_reduce(poly *r) {
   asm_barrett_reduce(r->coeffs);
 }
+void poly_reduce_i16(int16_t *r) {
+  asm_barrett_reduce(r);
+}
+
 
 extern void pointwise_add(int16_t *, const int16_t *, const int16_t *);
 /*************************************************
@@ -497,7 +501,9 @@ extern void pointwise_add(int16_t *, const int16_t *, const int16_t *);
 void poly_add(poly *r, const poly *a, const poly *b) {
     pointwise_add(r->coeffs,a->coeffs,b->coeffs);
 }
-
+void poly_add_i16(int16_t *r, const int16_t *a, const int16_t *b) {
+    pointwise_add(r,a,b);
+}
 
 extern void pointwise_sub(int16_t *, const int16_t *, const int16_t *);
 /*************************************************
@@ -511,6 +517,9 @@ extern void pointwise_sub(int16_t *, const int16_t *, const int16_t *);
 **************************************************/
 void poly_sub(poly *r, const poly *a, const poly *b) {
     pointwise_sub(r->coeffs,a->coeffs,b->coeffs);
+}
+void poly_sub_i16(int16_t *r, const int16_t *a, const int16_t *b) {
+    pointwise_sub(r,a,b);
 }
 
 /*************************************************

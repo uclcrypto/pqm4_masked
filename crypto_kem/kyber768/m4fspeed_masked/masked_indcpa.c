@@ -161,6 +161,7 @@ unsigned char masked_indcpa_enc_cmp(const unsigned char *c,
     masked_poly_invntt(masked_v);
     unmasked_poly(v,masked_v);
 
+    // TODO mask final message addition and poly comparison
     poly_addnoise(v, coins, nonce++);
     poly_frommsg(k, m);
     poly_add(v, v, k);
@@ -171,4 +172,101 @@ unsigned char masked_indcpa_enc_cmp(const unsigned char *c,
     rc = ~rc + 1;
     rc >>= 63;
     return (unsigned char)rc;
+}
+
+/*************************************************
+* Name:        masked_indcpa_dec
+*
+* Description: Decryption function of the CPA-secure
+*              public-key encryption scheme underlying Kyber.
+*
+* Arguments:   - unsigned char *m:        pointer to output decrypted message (of length KYBER_INDCPA_MSGBYTES)
+*              - const unsigned char *c:  pointer to input ciphertext (of length KYBER_INDCPA_BYTES)
+*              - const unsigned char *sk: pointer to input secret key (of length KYBER_INDCPA_SECRETKEYBYTES)
+**************************************************/
+void __attribute__ ((noinline)) masked_indcpa_dec(unsigned char *m, // secret
+                                           const unsigned char *c, // public
+                                           const unsigned char *sk) { // secret
+
+
+    poly mp, bp, psk;
+    poly *v = &bp;
+    StrAPoly masked_psk,masked_mp;
+    int d;
+    poly_unpackdecompress(&mp, c, 0);
+    poly_ntt(&mp);
+
+    //poly_frombytes_mul(&mp, sk);
+    
+    poly_frombytes(&psk,sk);
+    masked_poly(masked_psk,&psk);
+
+    for(d=0;d<NSHARES;d++){
+        poly_basemul_i16(masked_mp[d],mp.coeffs,masked_psk[d]);
+    }
+    unmasked_poly(&mp,masked_mp);
+
+    for(int i = 1; i < KYBER_K; i++) {
+        poly_unpackdecompress(&bp, c, i);
+        poly_ntt(&bp);
+        poly_frombytes_mul(&bp, sk + i*KYBER_POLYBYTES);
+        poly_add(&mp, &mp, &bp);
+    }
+
+    poly_invntt(&mp);
+    poly_decompress(v, c+KYBER_POLYVECCOMPRESSEDBYTES);
+    poly_sub(&mp, v, &mp);
+    poly_reduce(&mp);
+
+    poly_tomsg(m, &mp);
+
+    return;
+    /*
+    poly mp, bp;
+    poly *v = &bp;
+    poly psk;
+    StrAPoly masked_psk,masked_bp,masked_mp;
+    int d;
+
+    poly_unpackdecompress(&mp, c, 0);
+    poly_ntt(&mp);
+
+    // TODO handel masked private key sk
+    poly_frombytes(&psk,sk);
+    masked_poly(masked_psk,&psk);
+
+    for(d=0;d<NSHARES;d++){
+        poly_basemul_i16(masked_mp[d],mp.coeffs,masked_psk[d]);
+    }
+    unmasked_poly(&mp,masked_mp);
+    poly_tomsg(m, &mp);
+    for(int i = 1; i < KYBER_K; i++) {
+        poly_unpackdecompress(&bp, c, i);
+        poly_ntt(&bp);
+    
+        // TODO handel masked private key sk
+        poly_frombytes(&psk,sk + i*KYBER_POLYBYTES);
+        masked_poly(masked_psk,&psk);
+ 
+        for(d=0;d<NSHARES;d++){
+            poly_basemul_i16(masked_bp[d],bp.coeffs,masked_psk[d]);
+            poly_add_i16(masked_mp[d],masked_mp[d],masked_bp[d]);
+        }
+    }
+
+    masked_poly_invntt(masked_mp);
+    
+    // unpack public ciphertext
+    poly_decompress(v, c+KYBER_POLYVECCOMPRESSEDBYTES);
+   
+
+    poly_sub_i16(masked_mp[0], v->coeffs, masked_mp[0]);
+    for(d=0;d<NSHARES;d++){
+        poly_reduce_i16(masked_mp[d]);
+    }
+
+    // TODO Mask this
+    unmasked_poly(&mp,masked_mp);
+    poly_tomsg(m, &mp);
+    */
 }

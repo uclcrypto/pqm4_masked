@@ -82,7 +82,7 @@ int crypto_kem_dec(unsigned char *ss, const unsigned char *ct, const unsigned ch
     unsigned char kr[2 * KYBER_SYMBYTES];                                             /* Will contain key, coins */
     const unsigned char *pk = sk + KYBER_INDCPA_SECRETKEYBYTES;
 
-    indcpa_dec(buf, ct, sk);
+    masked_indcpa_dec(buf, ct, sk);
 
     for (i = 0; i < KYBER_SYMBYTES; i++) {                                            /* Multitarget countermeasure for coins + contributory KEM */
         buf[KYBER_SYMBYTES + i] = sk[KYBER_SECRETKEYBYTES - 2 * KYBER_SYMBYTES + i];  /* Save hash by storing H(pk) in sk */

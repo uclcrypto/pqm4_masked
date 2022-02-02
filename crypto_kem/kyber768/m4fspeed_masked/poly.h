@@ -43,9 +43,12 @@ void poly_basemul_acc_i16(int16_t *r, const int16_t *a, const int16_t *b);
 void poly_frommont(poly *r);
 
 void poly_reduce(poly *r);
+void poly_reduce_i16(int16_t *r);
 
 void poly_add(poly *r, const poly *a, const poly *b);
+void poly_add_i16(int16_t *r, const int16_t *a, const int16_t *b);
 void poly_sub(poly *r, const poly *a, const poly *b);
+void poly_sub_i16(int16_t *r, const int16_t *a, const int16_t *b);
 
 void poly_zeroize(poly *p);
 
