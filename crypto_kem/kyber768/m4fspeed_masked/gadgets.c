@@ -26,9 +26,11 @@ void masked_and(
     uint32_t ztmp[nshares];
     uint32_t r;
     uint32_t i,j;
+    
     for(i=0;i<nshares;i++){
         ztmp[i] = a[i*a_stride] & b[i*b_stride];
     }
+
     for(i=0;i<(nshares-1);i++){
         for(j=i+1; j<nshares;j++){
             r = rand32();
