@@ -10,7 +10,7 @@
 #include <stdint.h>
 
 /*************************************************
-* Name:        maskedpoly_ntt
+* Name:        masked_poly_ntt
 *
 * Description: Computes negacyclic number-theoretic transform (NTT) of
 *              a polynomial in place;
@@ -18,14 +18,14 @@
 *
 * Arguments:   - uint16_t *r: pointer to in/output polynomial
 **************************************************/
-void maskedpoly_ntt(StrAPoly r) {
+void masked_poly_ntt(StrAPoly r) {
     for(int d=0;d<NSHARES;d++){
         ntt(r[d]);
     }
 }
 
 /*************************************************
-* Name:        maskedpoly_invntt
+* Name:        masked_poly_invntt
 *
 * Description: Computes inverse of negacyclic number-theoretic transform (NTT) of
 *              a polynomial in place;
@@ -33,7 +33,7 @@ void maskedpoly_ntt(StrAPoly r) {
 *
 * Arguments:   - uint16_t *a: pointer to in/output polynomial
 **************************************************/
-void maskedpoly_invntt(StrAPoly r) {
+void masked_poly_invntt(StrAPoly r) {
     for(int d=0; d<NSHARES;d++){
         invntt(r[d]);
     }

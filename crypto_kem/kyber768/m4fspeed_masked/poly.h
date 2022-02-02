@@ -37,7 +37,9 @@ void poly_noise(poly *r, const unsigned char *seed, unsigned char nonce, int add
 void poly_ntt(poly *r);
 void poly_invntt(poly *r);
 void poly_basemul(poly *r, const poly *a, const poly *b);
+void poly_basemul_i16(int16_t *r, const int16_t *a, const int16_t *b);
 void poly_basemul_acc(poly *r, const poly *a, const poly *b);
+void poly_basemul_acc_i16(int16_t *r, const int16_t *a, const int16_t *b);
 void poly_frommont(poly *r);
 
 void poly_reduce(poly *r);

@@ -3,6 +3,6 @@
 #include "params.h"
 #include "masked.h"
 
-void maskedpoly_ntt(StrAPoly r);
-void maskedpoly_invntt(StrAPoly r);
+void masked_poly_ntt(StrAPoly r);
+void masked_poly_invntt(StrAPoly r);
 #endif

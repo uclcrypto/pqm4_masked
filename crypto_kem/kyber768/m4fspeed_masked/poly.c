@@ -437,6 +437,9 @@ extern void basemul_asm(int16_t *, const int16_t *, const int16_t *, const int16
 void poly_basemul(poly *r, const poly *a, const poly *b) {
     basemul_asm(r->coeffs, a->coeffs, b->coeffs, zetas);
 }
+void poly_basemul_i16(int16_t *r, const int16_t *a, const int16_t *b) {
+    basemul_asm(r, a, b, zetas);
+}
 
 extern void basemul_asm_acc(int16_t *, const int16_t *, const int16_t *, const int16_t *);
 /*************************************************
@@ -450,6 +453,9 @@ extern void basemul_asm_acc(int16_t *, const int16_t *, const int16_t *, const i
 **************************************************/
 void poly_basemul_acc(poly *r, const poly *a, const poly *b) {
     basemul_asm_acc(r->coeffs, a->coeffs, b->coeffs, zetas);
+}
+void poly_basemul_acc_i16(int16_t *r, const int16_t *a, const int16_t *b) {
+    basemul_asm_acc(r, a, b, zetas);
 }
 
 extern void asm_frommont(int16_t *r);

@@ -1,5 +1,6 @@
 #include "api.h"
 #include "indcpa.h"
+#include "masked_indcpa.h"
 #include "params.h"
 #include "randombytes.h"
 #include "symmetric.h"
@@ -88,7 +89,7 @@ int crypto_kem_dec(unsigned char *ss, const unsigned char *ct, const unsigned ch
     }
     hash_g(kr, buf, 2 * KYBER_SYMBYTES);
 
-    fail = indcpa_enc_cmp(ct, buf, pk, kr + KYBER_SYMBYTES);                          /* coins are in kr+KYBER_SYMBYTES */
+    fail = masked_indcpa_enc_cmp(ct, buf, pk, kr + KYBER_SYMBYTES);                          /* coins are in kr+KYBER_SYMBYTES */
 
     hash_h(kr + KYBER_SYMBYTES, ct, KYBER_CIPHERTEXTBYTES);                           /* overwrite coins in kr with H(c)  */
 
