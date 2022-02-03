@@ -55,6 +55,17 @@ void masked_xor(
     }
 }
 
+uint32_t unmask_boolean(
+        size_t nshares,
+        const uint32_t *in, size_t in_stride){
+    uint32_t out,d;
+    out =0;
+    for(d=0;d<nshares;d++){
+        out ^= in[d*in_stride];
+    }
+    return out;
+}
+
 void copy_sharing(
         size_t nshares,
         uint32_t *out, size_t out_stride,
@@ -62,5 +73,65 @@ void copy_sharing(
         ) {
     for (size_t i=0; i<nshares; i++){
         out[i*out_stride] = in[i*in_stride];
+    }
+}
+
+
+void secadd(size_t nshares,
+        size_t kbits,
+        uint32_t *out, size_t out_msk_stride, size_t out_data_stride,
+        const uint32_t *in1, size_t in1_msk_stride, size_t in1_data_stride,
+        const uint32_t *in2, size_t in2_msk_stride, size_t in2_data_stride){
+    
+    size_t i,d;
+    if(nshares==1){
+        uint32_t c = in1[0] & in2[0];
+        out[0] = in1[0] ^ in2[0];
+        for(i=1;i<kbits-1;i++){
+            uint32_t tmp = in1[i*in1_data_stride] ^ in2[i*in2_data_stride] ^ c;
+            c = (in1[i*in1_data_stride]&in2[i*in2_data_stride]) ^ (c & (in1[i*in1_data_stride] ^ in2[i*in2_data_stride]));
+            out[i*out_data_stride] = tmp;
+        }
+        out[(kbits-1)*out_data_stride] = c ^ in1[(kbits-1)*in1_data_stride] ^ in2[(kbits-1)*in2_data_stride];
+    }else{
+
+        uint32_t carry[nshares];
+        uint32_t xpy[nshares];
+        uint32_t xpc[nshares];
+        
+        masked_and(nshares,
+                    carry,1,
+                    &in1[0*in1_data_stride],in1_msk_stride,
+                    &in2[0*in2_data_stride],in2_msk_stride);
+        
+        masked_xor(nshares,
+                &out[0*out_data_stride],out_msk_stride,
+                &in1[0*in1_data_stride],in1_msk_stride,
+                &in2[0*in2_data_stride],in2_msk_stride);
+
+        for(i=1;i<kbits;i++){
+
+            // xpy = in2 ^ in1
+            // xpc = in1 ^ carry
+            // out = xpy ^ carry
+            for(d= 0;d<nshares;d++){
+                xpy[d] = in1[i*in1_data_stride + d*in1_msk_stride] ^ in2[i*in2_data_stride + d*in2_msk_stride];
+                xpc[d] = in1[i*in1_data_stride + d*in1_msk_stride] ^ carry[d];
+                out[i*out_data_stride + d*out_msk_stride] = xpy[d] ^ carry[d];
+            }
+            
+            if(i == (kbits-1)){ 
+                return;
+            }else{
+                masked_and(nshares,
+                        carry,1,
+                        xpy,1,
+                        xpc,1);
+            }
+            masked_xor(nshares,
+                    carry,1,
+                    carry,1,
+                    &in1[i*in1_data_stride],in1_msk_stride);
+        }
     }
 }

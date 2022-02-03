@@ -23,4 +23,9 @@ void copy_sharing(
         const uint32_t *in, size_t in_stride
         );
 
+void secadd(size_t nshares,
+        size_t kbits,
+        uint32_t *out, size_t out_msk_stride, size_t out_data_stride,
+        const uint32_t *in1, size_t in1_msk_stride, size_t in1_data_stride,
+        const uint32_t *in2, size_t in2_msk_stride, size_t in2_data_stride);
 #endif // GADGETS_H

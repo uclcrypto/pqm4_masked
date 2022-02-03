@@ -52,25 +52,24 @@ void APoly2StrAPoly(StrAPoly out, const APoly in){
 *           - size_t nshares: number of shares
 * **************************************************/
 void masked_dense2bitslice(
-        uint32_t *bitslice[],
-        int16_t *dense[],
-        size_t coeffs_size,
+        size_t nshares,
         size_t n_coeffs,
-        size_t nshares){
+        size_t coeffs_size,
+        uint32_t *bitslice,size_t bitslice_data_stride,size_t bitslice_msk_stride,
+        int16_t *dense,size_t dense_data_stride,size_t dense_msk_stride){
 
     size_t d,c,b;
     for(b=0;b<coeffs_size;b++){
         for(d=0;d<nshares;d++){
-            bitslice[b][d] = 0;
+            bitslice[b*bitslice_data_stride + d*bitslice_msk_stride] = 0;
         }
     }
     
-    
     for(d=0;d<nshares;d++){
         for(c=0; c<n_coeffs;c++){
-            int16_t xd = dense[c][d];
+            int16_t xd = dense[c*dense_data_stride + d*dense_msk_stride];
             for(b=0; b<coeffs_size;b++){
-                bitslice[b][d] |= (xd&0x1)<<c;
+                bitslice[b * bitslice_data_stride + d*bitslice_msk_stride] |= (xd&0x1)<<c;
                 xd = xd >> 1;
             }
         }
@@ -90,20 +89,20 @@ void masked_dense2bitslice(
 *           - size_t nshares: number of shares
 * **************************************************/
 void masked_bitslice2dense(
-        int16_t *dense[],
-        uint32_t *bitslice[],
-        size_t coeffs_size,
+        size_t nshares,
         size_t n_coeffs,
-        size_t nshares){
+        size_t coeffs_size,
+        int16_t *dense,size_t dense_data_stride,size_t dense_msk_stide,
+        uint32_t *bitslice,size_t bitslice_data_stride,size_t bitlice_msk_stride){
 
     size_t d,c,b;
     for(d=0;d<nshares;d++){
         for(c=0; c<n_coeffs;c++){
             int16_t xd = 0;
             for(b=0; b<coeffs_size;b++){
-                xd |= ((((bitslice[b][d])>>c)&0x1)<<b);
+                xd |= ((((bitslice[b*bitslice_data_stride + d*bitlice_msk_stride])>>c)&0x1)<<b);
             }
-            dense[c][d] = xd;
+            dense[c * dense_data_stride + d* dense_msk_stide] = xd;
         }
     }
 }
