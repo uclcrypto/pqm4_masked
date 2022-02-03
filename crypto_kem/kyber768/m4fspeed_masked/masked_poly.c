@@ -60,3 +60,92 @@ void masked_poly_tomsg(unsigned char *m, StrAPoly str_r){
         }
     }
 }
+
+void masked_poly_cmp(
+        size_t c,
+        uint32_t *rc,
+        const StrAPoly mp,
+        const poly *ref){
+
+    APoly r;
+    size_t i,b;
+    uint32_t bits[NSHARES*c];
+    uint32_t bits_ref[c];
+
+    StrAPoly2APoly(r, mp);
+ 
+    for(i=0;i<KYBER_N;i+=BSSIZE){
+
+        // compress masked polynomial
+        seccompress(NSHARES,BSSIZE,KYBER_Q,c,
+                bits,1,NSHARES,
+                r[i],1,NSHARES);
+
+        // map public polynomial to bitslice
+        masked_dense2bitslice(1,
+                BSSIZE,
+                c,
+                bits_ref,1,1,
+                &(ref->coeffs[i]),1,1);
+
+        for(b=0;b<c;b++){
+            // public polynomial and public one
+            bits[b*NSHARES] ^= bits_ref[b] ^ 0xFFFFFFFF;
+
+            masked_and(NSHARES,
+                    rc,1,
+                    rc,1,
+                    &bits[b*NSHARES],1);
+        }
+    }
+}
+void finalize_cmp(uint32_t *bits){
+    uint32_t other[NSHARES];
+    int d;
+    for(d=0;d<NSHARES;d++){
+        other[d] = bits[d] >> 16;
+    }
+    masked_and(NSHARES,
+            bits,1,
+            bits,1,
+            other,1);
+
+    for(d=0;d<NSHARES;d++){
+        other[d] = bits[d] >> 8;
+    }
+    masked_and(NSHARES,
+            bits,1,
+            bits,1,
+            other,1);
+    for(d=0;d<NSHARES;d++){
+        other[d] = bits[d] >> 8;
+    }
+    masked_and(NSHARES,
+            bits,1,
+            bits,1,
+            other,1);
+
+    for(d=0;d<NSHARES;d++){
+        other[d] = bits[d] >> 4;
+    }
+    masked_and(NSHARES,
+            bits,1,
+            bits,1,
+            other,1);
+
+    for(d=0;d<NSHARES;d++){
+        other[d] = bits[d] >> 2;
+    }
+    masked_and(NSHARES,
+            bits,1,
+            bits,1,
+            other,1);
+
+    for(d=0;d<NSHARES;d++){
+        other[d] = bits[d] >> 1;
+    }
+    masked_and(NSHARES,
+            bits,1,
+            bits,1,
+            other,1);
+}

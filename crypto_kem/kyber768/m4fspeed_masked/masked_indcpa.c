@@ -1,4 +1,5 @@
 #include "indcpa.h"
+#include "params.h"
 #include "ntt.h"
 #include "poly.h"
 #include "polyvec.h"
@@ -10,6 +11,15 @@
 
 #include <string.h>
 #include <stdint.h>
+
+static unsigned mswitch(unsigned x, unsigned q_start, unsigned q_end){
+  return (2*q_end*x+q_start)/(2*q_start);
+}
+
+static unsigned compress(unsigned x, unsigned q, unsigned d){
+  return mswitch(x, q, 1<<d)%(1<<d);
+}
+
 
 extern void doublebasemul_asm_acc(int16_t *r, const int16_t *a, const int16_t *b, int16_t zeta);
 /*************************************************
@@ -108,16 +118,23 @@ unsigned char masked_indcpa_enc_cmp(const unsigned char *c,
         const unsigned char *m,
         const unsigned char *pk,
         const unsigned char *coins) {
+
     uint64_t rc = 0;
+    uint32_t rc_masked[NSHARES];
+
     polyvec sp;
     poly bp;
+    polyvec c_ref;
     poly *pkp = &bp;
     poly *k = &bp;
     poly *v = &sp.vec[0];
     const unsigned char *seed = pk+KYBER_POLYVECBYTES;
     int i,d ;
     unsigned char nonce = 0;
-    
+
+    for(d=1;d<NSHARES;d++){rc_masked[d] = 0;}
+    rc_masked[0] = 0xFFFFFFFF;
+
     StrAPolyVec masked_sp;
     StrAPoly masked_bp;
     StrAPoly masked_v;
@@ -131,6 +148,7 @@ unsigned char masked_indcpa_enc_cmp(const unsigned char *c,
         masked_poly_ntt(masked_sp[i]);
     }
 
+    polyvec_decompress(&c_ref,c);
     for (i = 0; i < KYBER_K; i++) {
 
         masked_matacc(masked_bp, masked_sp, i, seed, 1);
@@ -143,7 +161,12 @@ unsigned char masked_indcpa_enc_cmp(const unsigned char *c,
         poly_reduce(&bp);
 
         // TODO protect polynomial comparison
-        rc |= cmp_poly_packcompress(c, &bp, i);
+        masked_poly(masked_bp,&bp);
+        for(int j=0;j<KYBER_N;j++){
+            c_ref.vec[i].coeffs[j] = compress(c_ref.vec[i].coeffs[j],KYBER_Q,KYBER_DU);
+        }
+        masked_poly_cmp(KYBER_DU,rc_masked,masked_bp,&c_ref.vec[i]);
+
     }
 
     poly_frombytes(pkp, pk);
@@ -167,11 +190,22 @@ unsigned char masked_indcpa_enc_cmp(const unsigned char *c,
     poly_add(v, v, k);
     poly_reduce(v);
 
-    rc |= cmp_poly_compress(c + KYBER_POLYVECCOMPRESSEDBYTES, v);
-
-    rc = ~rc + 1;
-    rc >>= 63;
-    return (unsigned char)rc;
+    masked_poly(masked_v,v);
+   
+    // Compare masked compress(v) with public compress(v_ref);
+    poly v_ref;
+    poly_decompress(&v_ref,c+KYBER_POLYVECCOMPRESSEDBYTES);
+    for(int j=0;j<KYBER_N;j++){
+        v_ref.coeffs[j] = compress(v_ref.coeffs[j],KYBER_Q,KYBER_DV);
+    }
+    masked_poly_cmp(KYBER_DV,rc_masked,masked_v,&v_ref);
+   
+    finalize_cmp(rc_masked);
+    for(d=0;d<NSHARES;d++){
+        rc ^= rc_masked[d];
+    }
+    
+    return (unsigned char)(~rc==0x0);
 }
 
 /*************************************************

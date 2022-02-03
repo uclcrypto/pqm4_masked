@@ -576,3 +576,5 @@ void poly_zeroize(poly *p) {
   for(i = 0; i < KYBER_N; i++)
    p->coeffs[i] = 0;
 }
+
+
