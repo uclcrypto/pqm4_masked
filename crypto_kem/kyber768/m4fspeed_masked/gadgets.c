@@ -135,3 +135,41 @@ void secadd(size_t nshares,
         }
     }
 }
+
+void seca2b(size_t nshares,
+                size_t kbits,
+                uint32_t *in, size_t in_msk_stride, size_t in_data_stride){
+
+    // TODO optimize inplace ? 
+    size_t i,d;
+
+    if(nshares==1){
+        return;
+    }
+
+    size_t nshares_low = nshares/2;
+    size_t nshares_high = nshares - nshares_low;
+
+    seca2b(nshares_low,kbits,in,in_msk_stride,in_data_stride);
+    seca2b(nshares_high,kbits,&in[nshares_low],in_msk_stride,in_data_stride);
+
+    uint32_t expanded_low[kbits*nshares];
+    uint32_t expanded_high[kbits*nshares];
+
+    for(i=0;i<kbits;i++){
+        for(d=0;d<nshares_low;d++){
+            expanded_low[i*nshares + d] = in[i*in_data_stride + d*in_msk_stride];
+            expanded_high[i*nshares + d] = 0;
+        }
+        for(d=nshares_low;d<nshares;d++){
+            expanded_high[i*nshares + d] = in[i*in_data_stride + d*in_msk_stride];
+            expanded_low[i*nshares + d] = 0;
+        }
+    }
+
+    secadd(nshares,kbits,
+            in,in_msk_stride,in_data_stride,
+            expanded_low,1,nshares,
+            expanded_high,1,nshares);
+}
+

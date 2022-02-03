@@ -190,3 +190,54 @@ unsigned int test_secadd(){
     report_test("test_secadd",err);
     return err;
 }
+
+unsigned int test_seca2b(){
+    size_t kbits = COEF_NBITS;
+    uint32_t in1[kbits*NSHARES];
+    uint32_t in2[kbits*NSHARES];
+    
+    int16_t coeffs_in1[NSHARES*BSSIZE];
+    int16_t coeffs_in2[NSHARES*BSSIZE];
+
+    int err;
+    size_t i,d;
+    for(i=0;i<kbits*NSHARES;i++){
+        in1[i] = rand32();
+        in2[i] = in1[i];
+    }
+
+    seca2b(NSHARES, kbits,
+            in1,1,NSHARES);
+
+    // convert all bitslice to dense
+    masked_bitslice2dense(
+            NSHARES,
+            BSSIZE,
+            kbits,
+            coeffs_in1,1,NSHARES,
+            in1,1,NSHARES);
+
+    masked_bitslice2dense(
+            NSHARES,
+            BSSIZE,
+            kbits,
+            coeffs_in2,1,NSHARES,
+            in2,1,NSHARES);
+
+    // check correctness
+    err = 0;
+    for(i=0;i<BSSIZE;i++){
+        int16_t uin1,uin2;
+        uin1 = 0; uin2 = 0;
+        for(d=0;d<NSHARES;d++){
+            uin1 ^= coeffs_in1[i*NSHARES + d];
+            uin2 += coeffs_in2[i*NSHARES + d];
+        }
+        uin1 &= ((1<<kbits)-1);
+        uin2 &= ((1<<kbits)-1);
+        err += (uin1 != uin2);
+    }
+
+    report_test("test_seca2b",err);
+    return err;
+}

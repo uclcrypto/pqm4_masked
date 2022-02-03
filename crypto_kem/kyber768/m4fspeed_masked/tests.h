@@ -6,4 +6,5 @@ unsigned int test_convertions_bitslice();
 unsigned int test_xor_bitslice();
 unsigned int test_and_bitslice();
 unsigned int test_secadd();
+unsigned int test_seca2b();
 #endif
