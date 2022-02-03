@@ -80,7 +80,7 @@ void masked_keccak(MaskedKeccakState *state) {
       // Chi: non-linear -> not sharewise.
       // Masked gadgets are implemented on 32-bit words and Chi does not contain rotations,
       // so we can work on 32-bit words
-      for (y=0; y<25; y+=5)
+      for (y=0; y<25; y+=5) {
       for (int off=0; off<2; off++)
       {
           uint32_t sb_state[5*NSHARES];
@@ -113,6 +113,7 @@ void masked_keccak(MaskedKeccakState *state) {
                       sb_state + x * sb_state_data_stride, sb_state_msk_stride
                       );
           }
+      }
       }
       // Iota
       // Add constant: on a single share
