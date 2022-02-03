@@ -5,6 +5,7 @@
 #include "hal.h"
 #include <stdio.h>
 #include "poly.h"
+#include "gadgets.h"
 
 static void report_test(char *msg,int err){
     char buf[128];
@@ -90,4 +91,57 @@ unsigned int test_convertions_bitslice(){
 
     report_test("test_convertions_bitslice",err);
     return err;
+}
+
+
+unsigned int test_xor_bitslice(){
+    uint32_t masked_x[NSHARES],masked_y[NSHARES],masked_z[NSHARES];
+    uint32_t x,y,z;
+    int d;
+    for(d=0;d<NSHARES;d++){
+        masked_x[d] = rand32();
+        masked_y[d] = rand32();
+    }
+    masked_xor(NSHARES,
+               masked_z,1,
+               masked_x,1,
+               masked_y,1);
+
+    x=0;y=0;z=0;
+    for(d=0;d<NSHARES;d++){
+        x ^= masked_x[d];
+        y ^= masked_y[d];
+        z ^= masked_z[d];
+    }
+
+    int err = (z != (x^y));
+    report_test("test_xor_bitslice",err);
+    return err;
+    
+}
+
+unsigned int test_and_bitslice(){
+    uint32_t masked_x[NSHARES],masked_y[NSHARES],masked_z[NSHARES];
+    uint32_t x,y,z;
+    int d;
+    for(d=0;d<NSHARES;d++){
+        masked_x[d] = rand32();
+        masked_y[d] = rand32();
+    }
+    masked_and(NSHARES,
+               masked_z,1,
+               masked_x,1,
+               masked_y,1);
+
+    x=0;y=0;z=0;
+    for(d=0;d<NSHARES;d++){
+        x ^= masked_x[d];
+        y ^= masked_y[d];
+        z ^= masked_z[d];
+    }
+
+    int err = (z != (x&y));
+    report_test("test_and_bitslice",err);
+    return err;
+    
 }
