@@ -12,7 +12,7 @@ typedef uint32_t BsBBit[NSHARES]; // dense
 typedef BsBBit BsBCoef[COEF_NBITS]; // dense
 typedef int16_t Coef;
 typedef Coef ACoef[NSHARES]; // dense
-typedef ACoef APoly[KYBER_N]; // dense
+typedef Coef APoly[KYBER_N][NSHARES]; // dense
 typedef APoly APolyVec[KYBER_K]; // dense
 typedef Coef StrAPoly[NSHARES][KYBER_N]; // strided
 typedef StrAPoly StrAPolyVec[KYBER_K]; // strided

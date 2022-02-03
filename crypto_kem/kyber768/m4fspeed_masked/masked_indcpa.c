@@ -233,11 +233,16 @@ void __attribute__ ((noinline)) masked_indcpa_dec(unsigned char *m, // secret
         poly_reduce_i16(masked_mp[d]);
     }
    
-    // TODO polynomial compression
-    unmasked_poly(&mp,masked_mp);
    
-    poly_reduce(&mp);
-    poly_tomsg(m, &mp);
+    unsigned char m_masked[KYBER_INDCPA_MSGBYTES*NSHARES];
+    masked_poly_tomsg(m_masked, masked_mp);
+    
+    memset(m,0,KYBER_INDCPA_MSGBYTES);
+    for(d=0;d<NSHARES;d++){
+        for(int i=0;i<KYBER_INDCPA_MSGBYTES;i++){
+            m[i] ^= m_masked[d*KYBER_N  + i];
+        }
+    }
 
     return;
 }
