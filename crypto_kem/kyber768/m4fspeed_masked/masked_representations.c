@@ -55,8 +55,8 @@ void masked_dense2bitslice(
         size_t nshares,
         size_t n_coeffs,
         size_t coeffs_size,
-        uint32_t *bitslice,size_t bitslice_data_stride,size_t bitslice_msk_stride,
-        int16_t *dense,size_t dense_data_stride,size_t dense_msk_stride){
+        uint32_t *bitslice,size_t bitslice_msk_stride,size_t bitslice_data_stride,
+        int16_t *dense,size_t dense_msk_stride,size_t dense_data_stride){
 
     size_t d,c,b;
     for(b=0;b<coeffs_size;b++){
@@ -92,17 +92,17 @@ void masked_bitslice2dense(
         size_t nshares,
         size_t n_coeffs,
         size_t coeffs_size,
-        int16_t *dense,size_t dense_data_stride,size_t dense_msk_stide,
-        uint32_t *bitslice,size_t bitslice_data_stride,size_t bitlice_msk_stride){
+        int16_t *dense,size_t dense_msk_stride,size_t dense_data_stride,
+        uint32_t *bitslice,size_t bitslice_msk_stride,size_t bitslice_data_stride){
 
     size_t d,c,b;
     for(d=0;d<nshares;d++){
         for(c=0; c<n_coeffs;c++){
             int16_t xd = 0;
             for(b=0; b<coeffs_size;b++){
-                xd |= ((((bitslice[b*bitslice_data_stride + d*bitlice_msk_stride])>>c)&0x1)<<b);
+                xd |= ((((bitslice[b*bitslice_data_stride + d*bitslice_msk_stride])>>c)&0x1)<<b);
             }
-            dense[c * dense_data_stride + d* dense_msk_stide] = xd;
+            dense[c * dense_data_stride + d* dense_msk_stride] = xd;
         }
     }
 }

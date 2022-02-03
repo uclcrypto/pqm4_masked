@@ -58,15 +58,15 @@ unsigned int test_convertions_bitslice(){
             NSHARES,
             BSSIZE,
             COEF_NBITS,
-            bitslice,NSHARES,1,
-            dense_x,NSHARES,1);
+            bitslice,1,NSHARES,
+            dense_x,1,NSHARES);
 
     masked_bitslice2dense(
             NSHARES,
             BSSIZE,
             COEF_NBITS,
-            dense_y,NSHARES,1,
-            bitslice,NSHARES,1);
+            dense_y,1,NSHARES,
+            bitslice,1,NSHARES);
 
     int err = 0;
     for(int i=0;i<COEF_NBITS;i++){
@@ -130,14 +130,18 @@ unsigned int test_and_bitslice(){
     return err;
 }
 
-/*
 unsigned int test_secadd(){
-    size_t kbits = 1;
+    size_t kbits = COEF_NBITS;
     uint32_t in1[kbits*NSHARES];
     uint32_t in2[kbits*NSHARES];
     uint32_t out[kbits*NSHARES];
     
-    int i,err;
+    int16_t coeffs_in1[NSHARES*BSSIZE];
+    int16_t coeffs_in2[NSHARES*BSSIZE];
+    int16_t coeffs_out[NSHARES*BSSIZE];
+
+    int err;
+    size_t i,d;
     for(i=0;i<kbits*NSHARES;i++){
         in1[i] = rand32();
         in2[i] = rand32();
@@ -148,35 +152,29 @@ unsigned int test_secadd(){
             in1,1,NSHARES,
             in2,1,NSHARES);
 
-    uint32_t *masked_out_ptr[kbits];
-    uint32_t *masked_in1_ptr[kbits];
-    uint32_t *masked_in2_ptr[kbits];
-    
-    int16_t coeffs_out[BSSIZE*NSHARES];
-    int16_t coeffs_in1[BSSIZE*NSHARES];
-    int16_t coeffs_in2[BSSIZE*NSHARES];
-    int16_t *coeffs_out_ptr[BSSIZE];
-    int16_t *coeffs_in1_ptr[BSSIZE];
-    int16_t *coeffs_in2_ptr[BSSIZE];
+    // convert all bitslice to dense
+    masked_bitslice2dense(
+            NSHARES,
+            BSSIZE,
+            kbits,
+            coeffs_in1,1,NSHARES,
+            in1,1,NSHARES);
 
-    for(i=0;i<kbits;i++){
-        masked_out_ptr[i] = &out[i*NSHARES];
-        masked_in1_ptr[i] = &in1[i*NSHARES];
-        masked_in2_ptr[i] = &in2[i*NSHARES];
-    }
-    for(i=0;i<BSSIZE;i++){
-        coeffs_out_ptr[i] = &coeffs_out[i*NSHARES];
-        coeffs_in1_ptr[i] = &coeffs_in1[i*NSHARES];
-        coeffs_in2_ptr[i] = &coeffs_in2[i*NSHARES];
-    }
+    masked_bitslice2dense(
+            NSHARES,
+            BSSIZE,
+            kbits,
+            coeffs_in2,1,NSHARES,
+            in2,1,NSHARES);
 
-    masked_bitslice2dense(masked_out_ptr,coeffs_out_ptr,
-                            kbits,BSSIZE,NSHARES);
-    masked_bitslice2dense(masked_in1_ptr,coeffs_in1_ptr,
-                            kbits,BSSIZE,NSHARES);
-    masked_bitslice2dense(masked_in2_ptr,coeffs_in2_ptr,
-                            kbits,BSSIZE,NSHARES);
+    masked_bitslice2dense(
+            NSHARES,
+            BSSIZE,
+            kbits,
+            coeffs_out,1,NSHARES,
+            out,1,NSHARES);
 
+    // check correctness
     err = 0;
     for(i=0;i<BSSIZE;i++){
         int16_t uin1,uin2,uout;
@@ -186,10 +184,9 @@ unsigned int test_secadd(){
             uin2 ^= coeffs_in2[i*NSHARES + d];
             uout ^= coeffs_out[i*NSHARES + d];
         }
-        err += ((uin1 + uin2)&((1<<kbits)-1) != uout);
+        err += ((uin1 + uin2)&((1<<kbits)-1)) != uout;
     }
 
     report_test("test_secadd",err);
     return err;
 }
-*/
