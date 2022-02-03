@@ -13,6 +13,13 @@ void masked_dense2bitslice(
         uint32_t *bitslice,size_t bitslice_msk_stride,size_t bitlice_data_stride,
         int16_t *dense,size_t dense_msk_stride,size_t dense_data_stide);
 
+void masked_dense2bitslice_u32(
+        size_t nshares,
+        size_t n_coeffs,
+        size_t coeffs_size,
+        uint32_t *bitslice,size_t bitslice_msk_stride,size_t bitlice_data_stride,
+        uint32_t *dense,size_t dense_msk_stride,size_t dense_data_stide);
+
 void masked_bitslice2dense(
         size_t nshares,
         size_t n_coeffs,

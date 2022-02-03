@@ -76,6 +76,30 @@ void masked_dense2bitslice(
     }
 }
 
+void masked_dense2bitslice_u32(
+        size_t nshares,
+        size_t n_coeffs,
+        size_t coeffs_size,
+        uint32_t *bitslice,size_t bitslice_msk_stride,size_t bitslice_data_stride,
+        uint32_t *dense,size_t dense_msk_stride,size_t dense_data_stride){
+
+    size_t d,c,b;
+    for(b=0;b<coeffs_size;b++){
+        for(d=0;d<nshares;d++){
+            bitslice[b*bitslice_data_stride + d*bitslice_msk_stride] = 0;
+        }
+    }
+    
+    for(d=0;d<nshares;d++){
+        for(c=0; c<n_coeffs;c++){
+            int32_t xd = dense[c*dense_data_stride + d*dense_msk_stride];
+            for(b=0; b<coeffs_size;b++){
+                bitslice[b * bitslice_data_stride + d*bitslice_msk_stride] |= (xd&0x1)<<c;
+                xd = xd >> 1;
+            }
+        }
+    }
+}
 /*************************************************
 * Name:        masked_bitslice2dense
 *

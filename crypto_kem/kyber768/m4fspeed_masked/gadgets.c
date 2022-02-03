@@ -2,6 +2,7 @@
 #include "masked.h"
 #include "gadgets.h"
 #include "masked_utils.h"
+#include "masked_representations.h"
 
 static inline uint32_t pini_and_core(uint32_t a, uint32_t b, uint32_t r) {
     uint32_t temp;
@@ -173,3 +174,55 @@ void seca2b(size_t nshares,
             expanded_high,1,nshares);
 }
 
+void seccompress(size_t nshares,
+                    size_t ncoeffs,
+                    uint32_t q,
+                    uint32_t c,
+                    uint32_t *out, size_t out_msk_stride, size_t out_data_stride,
+                    const int16_t *in, size_t in_msk_stride, size_t in_data_stride){
+
+    size_t i,d;
+    uint32_t ell=0;
+    uint32_t prod = q * nshares;
+    while(prod > 0){
+        prod = prod >> 1;
+        ell++;
+    }
+
+    uint32_t in_expanded[ncoeffs*nshares];
+    uint32_t bs_expanded[(ell+c)*nshares];
+
+    // map mod q to mod 2^ell.
+    uint32_t tmp32;
+    uint64_t tmp64;
+    for(i=0;i<ncoeffs;i++){
+        tmp64 = (in[i*in_data_stride]+q)%q;
+        tmp32 = ((((tmp64<<(c+ell+1)) +q)>>1)/(q));
+        tmp32 += (1<<(ell-1));
+        in_expanded[i*nshares] = tmp32 & ((1<<(ell+c))-1);
+        for(d=1;d<nshares;d++){
+            tmp64 = (q+in[i*in_data_stride + d*in_msk_stride])%q;
+            tmp32 = ((((tmp64<<(c+ell+1)) + q)>>1)/(q));
+            in_expanded[i*nshares+d] = tmp32 & ((1<<(ell+c))-1);
+        }
+    }
+    
+    // map to bitslice
+    masked_dense2bitslice_u32(
+            nshares,
+            ncoeffs,
+            ell+c,
+            bs_expanded,1,nshares,
+            in_expanded,1,nshares);
+
+    // convert A2B
+    seca2b(nshares,ell+c,
+            bs_expanded,1,nshares);
+
+    // map to the output
+    for(i=0;i<c;i++){
+        for(d=0;d<nshares;d++){
+            out[i*out_data_stride + d * out_msk_stride] = bs_expanded[(ell+i)*nshares + d];
+        }
+    }
+}

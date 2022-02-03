@@ -35,4 +35,10 @@ void seca2b(size_t nshares,
                 size_t kbits,
                 uint32_t *in, size_t in_msk_stride, size_t in_data_stride);
 
+void seccompress(size_t nshares,
+                    size_t ncoeffs,
+                    uint32_t q,
+                    uint32_t c,
+                    uint32_t *out, size_t out_msk_stride, size_t out_data_stride,
+                    const int16_t *in, size_t in_msk_stride, size_t in_data_stride);
 #endif // GADGETS_H
