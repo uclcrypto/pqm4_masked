@@ -9,6 +9,7 @@
 #include "masked.h"
 #include "masked_fips202.h"
 #include "gadgets.h"
+#include "bench.h"
 
 #define SHAKE256_RATE 136
 #define SHA3_512_RATE 72
@@ -129,6 +130,7 @@ void masked_hash_keccak(
         uint8_t* out, size_t outlen, size_t out_msk_stride, size_t out_data_stride,
         const uint8_t* in, size_t inlen, size_t in_msk_stride, size_t in_data_stride,
         size_t rate, uint8_t delim) {
+    start_bench(keccak);
     MaskedKeccakState state;
     memset(&state.w[0][0], 0, sizeof(state));
     uint64_t *msk_a = &state.w[0][0];
@@ -170,6 +172,7 @@ void masked_hash_keccak(
           out[i*out_data_stride+j*out_msk_stride] = ExtractU64(msk_a, i+j*Plen);
       }
   }
+    stop_bench(keccak);
 }
 
 
