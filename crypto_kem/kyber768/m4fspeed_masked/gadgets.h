@@ -56,7 +56,10 @@ void secadd_constant(size_t nshares,
 void seca2b(size_t nshares,
                 size_t kbits,
                 uint32_t *in, size_t in_msk_stride, size_t in_data_stride);
-
+void seca2b_modp(size_t nshares,
+                size_t kbits,
+                uint32_t p,
+                uint32_t *in, size_t in_msk_stride, size_t in_data_stride);
 void seccompress(size_t nshares,
                     size_t ncoeffs,
                     uint32_t q,
