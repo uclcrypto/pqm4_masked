@@ -80,6 +80,7 @@ void copy_sharing(
 
 void secadd(size_t nshares,
         size_t kbits,
+        size_t kbits_out,
         uint32_t *out, size_t out_msk_stride, size_t out_data_stride,
         const uint32_t *in1, size_t in1_msk_stride, size_t in1_data_stride,
         const uint32_t *in2, size_t in2_msk_stride, size_t in2_data_stride){
@@ -121,14 +122,24 @@ void secadd(size_t nshares,
                 out[i*out_data_stride + d*out_msk_stride] = xpy[d] ^ carry[d];
             }
             
-            if(i == (kbits-1)){ 
+            if((i == (kbits-1)) && (i == (kbits_out-1))){ 
                 return;
-            }else{
+            }else if(i == (kbits-1)){
                 masked_and(nshares,
                         carry,1,
                         xpy,1,
                         xpc,1);
+                masked_xor(nshares,
+                        &out[(kbits)*out_data_stride],out_msk_stride,
+                        carry,1,
+                        &in1[i*in1_data_stride],in1_msk_stride);
+                return;
             }
+
+            masked_and(nshares,
+                    carry,1,
+                    xpy,1,
+                    xpc,1);
             masked_xor(nshares,
                     carry,1,
                     carry,1,
@@ -137,6 +148,91 @@ void secadd(size_t nshares,
     }
 }
 
+void secadd_constant(size_t nshares,
+        size_t kbits,
+        size_t kbits_out,
+        uint32_t *out, size_t out_msk_stride, size_t out_data_stride,
+        const uint32_t *in1, size_t in1_msk_stride, size_t in1_data_stride,
+        uint32_t constant, const uint32_t *bmsk, size_t bmsk_msk_stride){
+    
+    size_t i,d;
+    uint32_t carry[nshares];
+    uint32_t xpy[nshares];
+    uint32_t xpc[nshares];
+   
+    if(constant & 0x1){
+        masked_and(nshares,
+                    carry,1,
+                    &in1[0*in1_data_stride],in1_msk_stride,
+                    bmsk,bmsk_msk_stride);
+        masked_xor(nshares,
+                &out[0*out_data_stride],out_msk_stride,
+                &in1[0*in1_data_stride],in1_msk_stride,
+                bmsk,bmsk_msk_stride);
+    }else{
+        for(d=0;d<nshares;d++){
+            carry[d] = 0;
+        }
+        copy_sharing(nshares,
+                out,out_msk_stride,
+                in1,in1_msk_stride);
+    }
+    for(i=1;i<kbits;i++){
+        // xpy = in2 ^ in1
+        // xpc = in1 ^ carry
+        // out = xpy ^ carry
+        if((constant >> i)&0x1){
+            for(d= 0;d<nshares;d++){
+                xpy[d] = in1[i*in1_data_stride + d*in1_msk_stride] ^ bmsk[d*bmsk_msk_stride];
+                xpc[d] = in1[i*in1_data_stride + d*in1_msk_stride] ^ carry[d];
+                out[i*out_data_stride + d*out_msk_stride] = xpy[d] ^ carry[d];
+            }
+            
+            if((i == (kbits-1)) && (i == (kbits_out-1))){ 
+                return;
+            }else if(i == (kbits-1)){
+                masked_and(nshares,
+                        carry,1,
+                        xpy,1,
+                        xpc,1);
+                masked_xor(nshares,
+                        &out[(kbits)*out_data_stride],out_msk_stride,
+                        carry,1,
+                        &in1[i*in1_data_stride],in1_msk_stride);
+                return;
+            }
+
+            masked_and(nshares,
+                    carry,1,
+                    xpy,1,
+                    xpc,1);
+            masked_xor(nshares,
+                    carry,1,
+                    carry,1,
+                    &in1[i*in1_data_stride],in1_msk_stride);
+        }else{
+            // compute the carry
+            masked_xor(nshares,
+                    &out[i*out_data_stride],out_msk_stride,
+                    carry,1,
+                    &in1[i*in1_data_stride],1);
+            
+            if((i == (kbits-1)) && (i == (kbits_out-1))){ 
+                return;
+            }else if(i == (kbits-1)){
+                masked_and(nshares,
+                        &out[(kbits)*out_data_stride],out_msk_stride,
+                        carry,1,
+                        &in1[i*in1_data_stride],in1_msk_stride);
+                return;
+            }
+            masked_and(nshares,
+                    carry,1,
+                    carry,1,
+                    &in1[i*in1_data_stride],in1_msk_stride);
+        }
+    }
+}
 void seca2b(size_t nshares,
                 size_t kbits,
                 uint32_t *in, size_t in_msk_stride, size_t in_data_stride){
@@ -168,7 +264,7 @@ void seca2b(size_t nshares,
         }
     }
 
-    secadd(nshares,kbits,
+    secadd(nshares,kbits,kbits,
             in,in_msk_stride,in_data_stride,
             expanded_low,1,nshares,
             expanded_high,1,nshares);
@@ -226,3 +322,53 @@ void seccompress(size_t nshares,
         }
     }
 }
+
+/*static void init_tables(void);
+// init a tables with q and -q in it, bitslice form
+static uint32_t is_init = 0;
+static uint32_t bs_q[NSHARES*(COEF_NBITS+1)];
+static uint32_t bs_negq[NSHARES*(COEF_NBITS+1)];
+
+static void init_tables(){
+
+    int16_t tmp[1];
+
+    tmp[0] = (1<<COEF_NBITS) - KYBER_Q;
+    map_dense2bitslice(
+            1,
+            1,
+            COEF_NBITS+1,
+            bs_negq,1,NSHARES,
+            tmp,1,1);
+    
+    tmp[0] = KYBER_Q;
+    map_dense2bitslice(
+            1,
+            1,
+            COEF_NBITS+1,
+            bs_q,1,NSHARES,
+            tmp,1,1);  
+
+    for(int i=0;i<COEF_NBITS+1;i++){
+        bs_q[i*NSHARES] *= 0xFFFFFFFF;
+        bs_negq[i*NSHARES] *= 0xFFFFFFFF;
+        for(int d=1;d<NSHARES;d++){
+            bs_q[i*NSHARES + d] = 0;
+            bs_negq[i*NSHARES + d] = 0;
+        }
+    }
+    is_init = 1;
+    return;
+}
+*/
+
+/*
+void secadd_modq(size_t nshares,
+        size_t kbits,
+        uint32_t q,
+        uint32_t *out, size_t out_msk_stride, size_t out_data_stride,
+        const uint32_t *in1, size_t in1_msk_stride, size_t in1_data_stride,
+        const uint32_t *in2, size_t in2_msk_stride, size_t in2_data_stride){
+ 
+}
+*/
