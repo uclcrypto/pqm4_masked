@@ -135,6 +135,59 @@ unsigned int test_secadd_constant(){
     
     uint32_t in1[kbits*NSHARES];
     uint32_t out[kbits*NSHARES];
+    
+    uint32_t constant = (1<<kbits) - 3329;
+
+    int16_t coeffs_in1[NSHARES*BSSIZE];
+    int16_t coeffs_out[NSHARES*BSSIZE];
+
+    int err;
+    size_t i,d;
+    for(i=0;i<kbits*NSHARES;i++){
+        in1[i] = rand32();
+        out[i] = in1[i];
+    }
+
+    secadd_constant(NSHARES, kbits,kbits,
+            out,1,NSHARES,
+            in1,1,NSHARES,
+            constant);
+
+    // convert all bitslice to dense
+    masked_bitslice2dense(
+            NSHARES,
+            BSSIZE,
+            kbits,
+            coeffs_in1,1,NSHARES,
+            in1,1,NSHARES);
+    
+    masked_bitslice2dense(
+            NSHARES,
+            BSSIZE,
+            kbits,
+            coeffs_out,1,NSHARES,
+            out,1,NSHARES);
+    // check correctness
+    err = 0;
+    for(i=0;i<BSSIZE;i++){
+        int16_t uin1,uout;
+        uin1 = 0; uout = 0;
+        for(d=0;d<NSHARES;d++){
+            uin1 ^= coeffs_in1[i*NSHARES + d];
+            uout ^= coeffs_out[i*NSHARES + d];
+        }
+        err += ((int16_t) ((uin1 + (constant)))&((1<<kbits)-1)) != uout;
+    }
+
+    report_test("test_secadd_constant",err);
+    return err;
+}
+
+unsigned int test_secadd_constant_bmsk(){
+    size_t kbits = COEF_NBITS;
+    
+    uint32_t in1[kbits*NSHARES];
+    uint32_t out[kbits*NSHARES];
     uint32_t bmsk[NSHARES];
     
     uint32_t constant = (1<<kbits) - 3329;
@@ -153,7 +206,7 @@ unsigned int test_secadd_constant(){
         bmsk[i] = rand32();
     }
 
-    secadd_constant(NSHARES, kbits,kbits,
+    secadd_constant_bmsk(NSHARES, kbits,kbits,
             out,1,NSHARES,
             in1,1,NSHARES,
             constant,bmsk,1);
@@ -192,7 +245,7 @@ unsigned int test_secadd_constant(){
         err += ((int16_t) ((uin1 + (constant * ubmsk)))&((1<<kbits)-1)) != uout;
     }
 
-    report_test("test_secadd_constant",err);
+    report_test("test_secadd_constant_bmsk",err);
     return err;
 }
 

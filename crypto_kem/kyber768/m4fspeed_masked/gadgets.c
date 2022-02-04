@@ -148,7 +148,7 @@ void secadd(size_t nshares,
     }
 }
 
-void secadd_constant(size_t nshares,
+void secadd_constant_bmsk(size_t nshares,
         size_t kbits,
         size_t kbits_out,
         uint32_t *out, size_t out_msk_stride, size_t out_data_stride,
@@ -233,6 +233,114 @@ void secadd_constant(size_t nshares,
         }
     }
 }
+
+void secadd_constant(size_t nshares,
+        size_t kbits,
+        size_t kbits_out,
+        uint32_t *out, size_t out_msk_stride, size_t out_data_stride,
+        const uint32_t *in1, size_t in1_msk_stride, size_t in1_data_stride,
+        uint32_t constant){
+    
+    size_t i,d;
+    uint32_t carry[nshares];
+    uint32_t xpy[nshares];
+    uint32_t xpc[nshares];
+   
+    if(constant & 0x1){
+        for(d=0; d<nshares; d++){
+            carry[d] = in1[d*in1_msk_stride];
+        }
+        copy_sharing(nshares,
+                out,out_msk_stride,
+                in1,in1_msk_stride);
+        out[0] ^= 0xFFFFFFFF;
+    }else{
+        for(d=0;d<nshares;d++){
+            carry[d] = 0;
+        }
+        copy_sharing(nshares,
+                out,out_msk_stride,
+                in1,in1_msk_stride);
+    }
+
+    for(i=1;i<kbits;i++){
+        if((constant >> i)&0x1){
+            for(d= 0;d<nshares;d++){
+                xpy[d] = in1[i*in1_data_stride + d*in1_msk_stride];
+                xpc[d] = in1[i*in1_data_stride + d*in1_msk_stride] ^ carry[d];
+                out[i*out_data_stride + d*out_msk_stride] = xpy[d] ^ carry[d];
+            }
+            xpy[0] ^= 0xFFFFFFFF;
+            out[i*out_data_stride] ^= 0xFFFFFFFF;
+
+            if((i == (kbits-1)) && (i == (kbits_out-1))){ 
+                return;
+            }else if(i == (kbits-1)){
+                masked_and(nshares,
+                        carry,1,
+                        xpy,1,
+                        xpc,1);
+                masked_xor(nshares,
+                        &out[(kbits)*out_data_stride],out_msk_stride,
+                        carry,1,
+                        &in1[i*in1_data_stride],in1_msk_stride);
+                return;
+            }
+
+            masked_and(nshares,
+                    carry,1,
+                    xpy,1,
+                    xpc,1);
+            masked_xor(nshares,
+                    carry,1,
+                    carry,1,
+                    &in1[i*in1_data_stride],in1_msk_stride);
+        }else{
+            // compute the carry
+            masked_xor(nshares,
+                    &out[i*out_data_stride],out_msk_stride,
+                    carry,1,
+                    &in1[i*in1_data_stride],1);
+            
+            if((i == (kbits-1)) && (i == (kbits_out-1))){ 
+                return;
+            }else if(i == (kbits-1)){
+                masked_and(nshares,
+                        &out[(kbits)*out_data_stride],out_msk_stride,
+                        carry,1,
+                        &in1[i*in1_data_stride],in1_msk_stride);
+                return;
+            }
+            masked_and(nshares,
+                    carry,1,
+                    carry,1,
+                    &in1[i*in1_data_stride],in1_msk_stride);
+        }
+    }
+}
+
+
+
+void secadd_modq(size_t nshares,
+        size_t kbits,
+        uint32_t q,
+        uint32_t *out, size_t out_msk_stride, size_t out_data_stride,
+        const uint32_t *in1, size_t in1_msk_stride, size_t in1_data_stride,
+        const uint32_t *in2, size_t in2_msk_stride, size_t in2_data_stride){
+
+    uint32_t s[(kbits+1)*NSHARES];
+    uint32_t sp[(kbits+1)*NSHARES];
+    uint32_t bmsk_ones[NSHARES];
+
+    secadd(nshares,
+            kbits,kbits+1,
+            s,1,NSHARES,
+            in1,in1_msk_stride,in1_data_stride,
+            in2,in2_msk_stride,in2_data_stride);
+    bmsk_ones[0] = 0xFFFFFFFF;
+}
+
+
 void seca2b(size_t nshares,
                 size_t kbits,
                 uint32_t *in, size_t in_msk_stride, size_t in_data_stride){
@@ -362,13 +470,3 @@ static void init_tables(){
 }
 */
 
-/*
-void secadd_modq(size_t nshares,
-        size_t kbits,
-        uint32_t q,
-        uint32_t *out, size_t out_msk_stride, size_t out_data_stride,
-        const uint32_t *in1, size_t in1_msk_stride, size_t in1_data_stride,
-        const uint32_t *in2, size_t in2_msk_stride, size_t in2_data_stride){
- 
-}
-*/
