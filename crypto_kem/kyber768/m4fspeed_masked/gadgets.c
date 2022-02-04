@@ -86,65 +86,53 @@ void secadd(size_t nshares,
         const uint32_t *in2, size_t in2_msk_stride, size_t in2_data_stride){
     
     size_t i,d;
-    if(nshares==1){
-        uint32_t c = in1[0] & in2[0];
-        out[0] = in1[0] ^ in2[0];
-        for(i=1;i<kbits-1;i++){
-            uint32_t tmp = in1[i*in1_data_stride] ^ in2[i*in2_data_stride] ^ c;
-            c = (in1[i*in1_data_stride]&in2[i*in2_data_stride]) ^ (c & (in1[i*in1_data_stride] ^ in2[i*in2_data_stride]));
-            out[i*out_data_stride] = tmp;
-        }
-        out[(kbits-1)*out_data_stride] = c ^ in1[(kbits-1)*in1_data_stride] ^ in2[(kbits-1)*in2_data_stride];
-    }else{
-
-        uint32_t carry[nshares];
-        uint32_t xpy[nshares];
-        uint32_t xpc[nshares];
-        
-        masked_and(nshares,
-                    carry,1,
-                    &in1[0*in1_data_stride],in1_msk_stride,
-                    &in2[0*in2_data_stride],in2_msk_stride);
-        
-        masked_xor(nshares,
-                &out[0*out_data_stride],out_msk_stride,
+    uint32_t carry[nshares];
+    uint32_t xpy[nshares];
+    uint32_t xpc[nshares];
+    
+    masked_and(nshares,
+                carry,1,
                 &in1[0*in1_data_stride],in1_msk_stride,
                 &in2[0*in2_data_stride],in2_msk_stride);
+    
+    masked_xor(nshares,
+            &out[0*out_data_stride],out_msk_stride,
+            &in1[0*in1_data_stride],in1_msk_stride,
+            &in2[0*in2_data_stride],in2_msk_stride);
 
-        for(i=1;i<kbits;i++){
+    for(i=1;i<kbits;i++){
 
-            // xpy = in2 ^ in1
-            // xpc = in1 ^ carry
-            // out = xpy ^ carry
-            for(d= 0;d<nshares;d++){
-                xpy[d] = in1[i*in1_data_stride + d*in1_msk_stride] ^ in2[i*in2_data_stride + d*in2_msk_stride];
-                xpc[d] = in1[i*in1_data_stride + d*in1_msk_stride] ^ carry[d];
-                out[i*out_data_stride + d*out_msk_stride] = xpy[d] ^ carry[d];
-            }
-            
-            if((i == (kbits-1)) && (i == (kbits_out-1))){ 
-                return;
-            }else if(i == (kbits-1)){
-                masked_and(nshares,
-                        carry,1,
-                        xpy,1,
-                        xpc,1);
-                masked_xor(nshares,
-                        &out[(kbits)*out_data_stride],out_msk_stride,
-                        carry,1,
-                        &in1[i*in1_data_stride],in1_msk_stride);
-                return;
-            }
-
+        // xpy = in2 ^ in1
+        // xpc = in1 ^ carry
+        // out = xpy ^ carry
+        for(d= 0;d<nshares;d++){
+            xpy[d] = in1[i*in1_data_stride + d*in1_msk_stride] ^ in2[i*in2_data_stride + d*in2_msk_stride];
+            xpc[d] = in1[i*in1_data_stride + d*in1_msk_stride] ^ carry[d];
+            out[i*out_data_stride + d*out_msk_stride] = xpy[d] ^ carry[d];
+        }
+        
+        if((i == (kbits-1)) && (i == (kbits_out-1))){ 
+            return;
+        }else if(i == (kbits-1)){
             masked_and(nshares,
                     carry,1,
                     xpy,1,
                     xpc,1);
             masked_xor(nshares,
-                    carry,1,
+                    &out[(kbits)*out_data_stride],out_msk_stride,
                     carry,1,
                     &in1[i*in1_data_stride],in1_msk_stride);
+            return;
         }
+
+        masked_and(nshares,
+                carry,1,
+                xpy,1,
+                xpc,1);
+        masked_xor(nshares,
+                carry,1,
+                carry,1,
+                &in1[i*in1_data_stride],in1_msk_stride);
     }
 }
 
@@ -284,6 +272,10 @@ void secadd_constant(size_t nshares,
                         &out[(kbits)*out_data_stride],out_msk_stride,
                         carry,1,
                         &in1[i*in1_data_stride],in1_msk_stride);
+
+                // add the kbits_out of the constant
+                out[(kbits)*out_data_stride] ^= 0xFFFFFFFF * ((constant>>kbits)&0x1);
+                
                 return;
             }
 
@@ -309,6 +301,9 @@ void secadd_constant(size_t nshares,
                         &out[(kbits)*out_data_stride],out_msk_stride,
                         carry,1,
                         &in1[i*in1_data_stride],in1_msk_stride);
+                
+                // add the kbits_out of the constant
+                out[(kbits)*out_data_stride] ^= 0xFFFFFFFF * ((constant>>kbits)&0x1);
                 return;
             }
             masked_and(nshares,
@@ -407,24 +402,45 @@ void seca2b_modp(size_t nshares,
     seca2b_modp(nshares_low,kbits,p,in,in_msk_stride,in_data_stride);
     seca2b_modp(nshares_high,kbits,p,&in[nshares_low],in_msk_stride,in_data_stride);
 
-    uint32_t expanded_low[kbits*nshares];
-    uint32_t expanded_high[kbits*nshares];
+    uint32_t expanded_low[(kbits+1)*nshares];
+    uint32_t expanded_high[(kbits+1)*nshares];
+    uint32_t u[(kbits+1)*nshares];
 
-    for(i=0;i<kbits;i++){
+    secadd_constant(nshares_low,
+            kbits,
+            kbits+1,
+            expanded_low,1,nshares,
+            in,in_msk_stride,in_data_stride,
+            (1<<(kbits+1))-p);
+
+
+    for(i=0;i<(kbits+1);i++){
         for(d=0;d<nshares_low;d++){
-            expanded_low[i*nshares + d] = in[i*in_data_stride + d*in_msk_stride];
+            // has already been written by secadd_constant_bmsk
+            //expanded_low[i*nshares + d] = in[i*in_data_stride + d*in_msk_stride];
             expanded_high[i*nshares + d] = 0;
         }
         for(d=nshares_low;d<nshares;d++){
-            expanded_high[i*nshares + d] = in[i*in_data_stride + d*in_msk_stride];
+            // kbits + 1 within in is unset
+            expanded_high[i*nshares + d] = (i<(kbits)) ? in[i*in_data_stride + d*in_msk_stride]: 0;
             expanded_low[i*nshares + d] = 0;
         }
     }
 
-    secadd_modp(nshares,kbits,p,
+    secadd(nshares,
+            kbits+1,kbits+1,
+            u,1,nshares,
+            expanded_high,1,nshares,
+            expanded_low,1,nshares);
+
+    secadd_constant_bmsk(
+            nshares,
+            kbits,
+            kbits,
             in,in_msk_stride,in_data_stride,
-            expanded_low,1,nshares,
-            expanded_high,1,nshares);
+            u,1,nshares,
+            p,&u[kbits*nshares],1);
+
 }
 void seccompress(size_t nshares,
                     size_t ncoeffs,

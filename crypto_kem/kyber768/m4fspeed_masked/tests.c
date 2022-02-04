@@ -480,6 +480,7 @@ unsigned int test_seca2b_modp(){
         }
         uin1 = (uin1)%q;
         uout = uout & ((1<<kbits)-1);
+
         err += (uin1 != uout);
     }
     report_test("test_seca2b_modp",err);
