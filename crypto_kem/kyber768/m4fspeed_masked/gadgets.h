@@ -31,6 +31,14 @@ void secadd(size_t nshares,
         const uint32_t *in1, size_t in1_msk_stride, size_t in1_data_stride,
         const uint32_t *in2, size_t in2_msk_stride, size_t in2_data_stride);
 
+void secadd_modp(size_t nshares,
+        size_t kbits,
+        uint32_t p,
+        uint32_t *out, size_t out_msk_stride, size_t out_data_stride,
+        const uint32_t *in1, size_t in1_msk_stride, size_t in1_data_stride,
+        const uint32_t *in2, size_t in2_msk_stride, size_t in2_data_stride);
+
+
 void secadd_constant_bmsk(size_t nshares,
         size_t kbits,
         size_t kbits_out,
