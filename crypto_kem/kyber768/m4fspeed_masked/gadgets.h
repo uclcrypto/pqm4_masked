@@ -26,6 +26,12 @@ void copy_sharing(
 void RefreshIOS_rec(uint32_t *x, uint32_t d);
 
 // Adders
+void secfulladd(size_t nshares,
+        uint32_t *co, size_t co_msk_stride,
+        uint32_t *w, size_t w_msk_stide,
+        uint32_t *ci, size_t ci_msk_stride,
+        uint32_t *x, size_t x_msk_stride,
+        uint32_t *y, size_t y_msk_stride);
 void secadd(size_t nshares,
         size_t kbits,size_t kbits_out,
         uint32_t *out, size_t out_msk_stride, size_t out_data_stride,
@@ -71,5 +77,12 @@ void seccompress(size_t nshares,
         uint32_t *out, size_t out_msk_stride, size_t out_data_stride,
         const int16_t *in, size_t in_msk_stride, size_t in_data_stride);
 
+void masked_cbd(size_t nshares,
+        size_t eta,
+        size_t n_coeffs,
+        size_t p, size_t kbits,
+        int16_t *z, size_t z_msk_stride, size_t z_data_stride, 
+        uint32_t *a, size_t a_msk_stride, size_t a_data_stride,
+        uint32_t *b, size_t b_msk_stride, size_t b_data_stride);
 
 #endif // GADGETS_H

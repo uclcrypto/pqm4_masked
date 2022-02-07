@@ -586,3 +586,118 @@ void seccompress(size_t nshares,
     }
 }
 
+void secfulladd(size_t nshares,
+        uint32_t *co, size_t co_msk_stride,
+        uint32_t *w, size_t w_msk_stide,
+        uint32_t *ci, size_t ci_msk_stride,
+        uint32_t *x, size_t x_msk_stride,
+        uint32_t *y, size_t y_msk_stride){
+    uint32_t a[nshares];
+    uint32_t b[nshares];
+    
+    masked_xor(nshares,
+            a,1,
+            x,x_msk_stride,
+            y,y_msk_stride);
+
+    masked_xor(nshares,
+            b,1,
+            x,x_msk_stride,
+            ci,ci_msk_stride);
+
+    // compute carry out
+    masked_and(nshares,
+            a,1,
+            b,1,
+            a,1);
+
+    masked_xor(nshares,
+            a,1,
+            a,1,
+            x,1);
+
+    // compute w
+    masked_xor(nshares,
+            w,w_msk_stide,
+            b,1,
+            y,y_msk_stride);
+
+    // write carry out
+    for(int d=0;d<nshares;d++){
+        co[d*co_msk_stride] = a[d];
+    }
+}
+
+void masked_cbd(size_t nshares,
+        size_t eta,
+        size_t n_coeffs,
+        size_t p,size_t kbits,
+        int16_t *z, size_t z_msk_stride, size_t z_data_stride, 
+        uint32_t *a, size_t a_msk_stride, size_t a_data_stride,
+        uint32_t *b, size_t b_msk_stride, size_t b_data_stride){
+
+
+    size_t np = 2*eta;
+    size_t n,i,d,k,j;
+    uint32_t sp[nshares*np],z_str[nshares*COEF_NBITS];
+   
+    //  k = ceil(log2(2*eta +1))
+    k=0;
+    i = 2*eta +1;
+    while(i!=0){
+        k++; i >>=1;
+    }
+
+    // copy input puts
+    for(i=0;i<eta;i++){
+        for(d=0;d<nshares;d++){
+            sp[(i*2)*nshares + d ] = a[i*a_data_stride + d * a_msk_stride]; 
+            sp[(i*2)*nshares + nshares + d ] = b[i*b_data_stride + d * b_msk_stride];
+            sp[(i*2)*nshares + nshares + d ] ^= (d==0) ? 0xFFFFFFFF:0; 
+        }
+    }
+
+    uint32_t *c;
+    for(i=0;i<k;i++){ // iterate on output bits
+       
+        c = &z_str[i*nshares];
+
+        // init the carry
+        for(d=0;d<nshares;d++){
+            c[d] = (np&0x1) ? sp[(np-1)*nshares + d]:0;
+        }
+
+        // sum np bits 
+        for(j=0;j<np/2;j++){
+            secfulladd(nshares,
+                    &sp[j*nshares],1,
+                    c,1,
+                    c,1,
+                    &sp[(1+ 2*j)*nshares],1,
+                    &sp[(2*j)*nshares],1);
+        }
+
+        np /= 2;
+    }
+
+    for(i=k;i<COEF_NBITS;i++){
+        for(d=0;d<nshares;d++){
+            z_str[i*nshares + d] = 0;
+        }
+    }
+
+    secb2a_modp(nshares,
+            p,
+            z_str,1,nshares);
+
+    masked_bitslice2dense(nshares,
+            n_coeffs,
+            kbits,
+            z,z_msk_stride,z_data_stride,
+            z_str,1,nshares);
+
+    for(i=0;i<n_coeffs;i++){
+        z[i*nshares] = (z[i*nshares] + p - eta)%p;
+    }
+}
+

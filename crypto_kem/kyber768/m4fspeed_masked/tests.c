@@ -600,3 +600,55 @@ unsigned int test_seccompress(){
     report_test("test_seccompress",err);
     return err;
 }
+
+static int32_t hw(uint32_t x){
+    uint32_t hw=0;
+    while(x>0){hw += x&0x1; x>>=1;}
+    return hw;
+}
+unsigned int test_cbd(){
+    uint32_t eta = 3;
+    uint32_t nshares = NSHARES;
+    uint32_t n_coeffs = BSSIZE;
+    size_t p = KYBER_Q; size_t kbits = COEF_NBITS;
+    size_t i,d;
+    int err = 0;
+
+    int16_t z[nshares * n_coeffs];
+    uint32_t a[eta*nshares];
+    uint32_t b[eta*nshares];
+    int16_t a_dense[n_coeffs*nshares];
+    int16_t b_dense[n_coeffs*nshares];
+
+    masked_cbd(nshares,eta,n_coeffs,p,kbits,
+            z,1,nshares,
+            a,1,nshares,
+            b,1,nshares);
+
+    masked_bitslice2dense(nshares,
+            n_coeffs,eta,
+            a_dense,1,nshares,
+            a,1,nshares);
+
+    masked_bitslice2dense(nshares,
+            n_coeffs,eta,
+            b_dense,1,nshares,
+            b,1,nshares);
+
+    for(i=0;i<n_coeffs;i++){
+        uint32_t x = 0;
+        uint32_t au = 0;
+        uint32_t bu = 0;
+        for(d=0;d<nshares;d++){
+            x += z[i*nshares + d];
+            au ^= a_dense[i*nshares + d];
+            bu ^= b_dense[i*nshares + d];
+        }
+        x = x%p;
+        err += ((hw(au) - hw(bu) + p)%p) != x;
+    }
+
+    report_test("test_cbd",err);
+    return err;
+    
+}
