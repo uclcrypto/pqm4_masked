@@ -389,7 +389,6 @@ void seca2b_modp(size_t nshares,
                 uint32_t p,
                 uint32_t *in, size_t in_msk_stride, size_t in_data_stride){
 
-    // TODO optimize inplace ? 
     size_t i,d;
 
     if(nshares==1){
@@ -442,6 +441,98 @@ void seca2b_modp(size_t nshares,
             p,&u[kbits*nshares],1);
 
 }
+
+void secb2a_modp(size_t nshares,
+             //   size_t kbits, // MUST BE EQUAL TO COEF_NBITS
+                uint32_t p,
+                uint32_t *in, size_t in_msk_stride, size_t in_data_stride){
+
+    int16_t z_dense[BSSIZE*nshares];
+    int16_t zp_dense[BSSIZE*nshares];
+    uint32_t zp_str[COEF_NBITS*nshares];
+    uint32_t b_str[COEF_NBITS*nshares];
+    uint16_t r[2];
+    size_t d,i;
+
+    // generate uniform sharing for z
+    // zp = p - z;
+    for(d=0;d<nshares-1;d++){
+        for(i=0;i<BSSIZE;i+=2){
+            rand_q(r);
+            z_dense[i*nshares + d] = r[0];
+            zp_dense[i*nshares + d] = p - r[0];
+        
+            z_dense[(i+1)*nshares + d] = r[1];
+            zp_dense[(i+1)*nshares + d] = p - r[1];
+        }
+#if ((BSSIZE&0x1) == 0x1)
+        rand_q(r);
+        z_dense[(BSSIZE-1)*nshares + d] = r[0];
+        zp_dense[(BSSIZE-1)*nshares + d] = p - r[0];
+#endif
+    }
+
+    // map zp to bitslice representation
+    masked_dense2bitslice(nshares-1,
+            BSSIZE,
+            COEF_NBITS,
+            zp_str,1,nshares,
+            zp_dense,1,nshares);
+
+    // last shares of zp set to zero
+    for(i=0;i<COEF_NBITS;i++){
+        zp_str[i*nshares + (nshares-1)] = 0;
+    }
+
+    // last shares of zp_str to zero 
+    seca2b_modp(nshares,
+            COEF_NBITS,
+            p,
+            zp_str,1,nshares);
+
+    secadd_modp(nshares,
+            COEF_NBITS,
+            p,
+            b_str,1,nshares,
+            in,in_msk_stride,in_data_stride,
+            zp_str,1,nshares);
+
+    // map z to bistlice in output buffer
+    masked_dense2bitslice(nshares-1,
+            BSSIZE,
+            COEF_NBITS,
+            in,in_msk_stride,in_data_stride,
+            z_dense,1,nshares);
+  
+    // unmask b_str and set to the last share of the output
+    for(i=0;i<COEF_NBITS;i++){
+        RefreshIOS_rec(&b_str[i*nshares],nshares);
+        
+        in[i*in_data_stride + (nshares-1)*in_msk_stride] = 0;
+        for(d=0;d<nshares;d++){
+            in[i*in_data_stride + (nshares-1)*in_msk_stride] ^= b_str[i*nshares + d];
+        }
+    }
+}
+
+void RefreshIOS_rec(uint32_t *x, uint32_t d){
+    uint32_t r;
+    if (d==1) {
+    } else if (d == 2) {
+        r = get_random();
+        x[0] ^= r;
+        x[1] ^= r;
+    } else {
+        RefreshIOS_rec(x, d/2);
+        RefreshIOS_rec(x+d/2, d-d/2);
+        for (unsigned int i=0; i<d/2; i++) {
+            r = rand32();
+            x[i] ^= r;
+            x[i+d/2] ^= r;
+        }
+    }
+}
+
 void seccompress(size_t nshares,
                     size_t ncoeffs,
                     uint32_t q,
@@ -494,43 +585,4 @@ void seccompress(size_t nshares,
         }
     }
 }
-
-/*static void init_tables(void);
-// init a tables with q and -q in it, bitslice form
-static uint32_t is_init = 0;
-static uint32_t bs_q[NSHARES*(COEF_NBITS+1)];
-static uint32_t bs_negq[NSHARES*(COEF_NBITS+1)];
-
-static void init_tables(){
-
-    int16_t tmp[1];
-
-    tmp[0] = (1<<COEF_NBITS) - KYBER_Q;
-    map_dense2bitslice(
-            1,
-            1,
-            COEF_NBITS+1,
-            bs_negq,1,NSHARES,
-            tmp,1,1);
-    
-    tmp[0] = KYBER_Q;
-    map_dense2bitslice(
-            1,
-            1,
-            COEF_NBITS+1,
-            bs_q,1,NSHARES,
-            tmp,1,1);  
-
-    for(int i=0;i<COEF_NBITS+1;i++){
-        bs_q[i*NSHARES] *= 0xFFFFFFFF;
-        bs_negq[i*NSHARES] *= 0xFFFFFFFF;
-        for(int d=1;d<NSHARES;d++){
-            bs_q[i*NSHARES + d] = 0;
-            bs_negq[i*NSHARES + d] = 0;
-        }
-    }
-    is_init = 1;
-    return;
-}
-*/
 
