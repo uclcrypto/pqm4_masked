@@ -141,10 +141,7 @@ unsigned char masked_indcpa_enc_cmp(const unsigned char *c,
 
     for (i = 0; i < KYBER_K; i++){
 
-        // TODO protected this noise sampling
-        poly_getnoise(sp.vec + i, coins, nonce++);
-        masked_poly(masked_sp[i], sp.vec + i);
-        
+        masked_poly_noise(masked_sp[i],coins,nonce++,0);
         masked_poly_ntt(masked_sp[i]);
     }
 
@@ -153,20 +150,11 @@ unsigned char masked_indcpa_enc_cmp(const unsigned char *c,
 
         masked_matacc(masked_bp, masked_sp, i, seed, 1);
         masked_poly_invntt(masked_bp);
-        unmasked_poly(&bp,masked_bp);
-
-
-        // TODO protect this noise sampling
-        poly_addnoise(&bp, coins, nonce++);
-        poly_reduce(&bp);
-
-        // TODO protect polynomial comparison
-        masked_poly(masked_bp,&bp);
+        masked_poly_noise(masked_bp,coins,nonce++,1);
         for(int j=0;j<KYBER_N;j++){
             c_ref.vec[i].coeffs[j] = compress(c_ref.vec[i].coeffs[j],KYBER_Q,KYBER_DU);
         }
         masked_poly_cmp(KYBER_DU,rc_masked,masked_bp,&c_ref.vec[i]);
-
     }
 
     poly_frombytes(pkp, pk);
@@ -182,10 +170,11 @@ unsigned char masked_indcpa_enc_cmp(const unsigned char *c,
     }
 
     masked_poly_invntt(masked_v);
-    unmasked_poly(v,masked_v);
 
+    masked_poly_noise(masked_v,coins,nonce++,1);
+    
     // TODO mask final message addition and poly comparison
-    poly_addnoise(v, coins, nonce++);
+    unmasked_poly(v,masked_v);
     poly_frommsg(k, m);
     poly_add(v, v, k);
     poly_reduce(v);
@@ -204,8 +193,8 @@ unsigned char masked_indcpa_enc_cmp(const unsigned char *c,
     for(d=0;d<NSHARES;d++){
         rc ^= rc_masked[d];
     }
-    
-    return (unsigned char)(~rc==0x0);
+
+    return (unsigned char)(!rc);
 }
 
 /*************************************************

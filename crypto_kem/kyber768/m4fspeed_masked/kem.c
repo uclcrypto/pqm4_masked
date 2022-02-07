@@ -89,12 +89,12 @@ int crypto_kem_dec(unsigned char *ss, const unsigned char *ct, const unsigned ch
     }
     hash_g(kr, buf, 2 * KYBER_SYMBYTES);
 
-    fail = masked_indcpa_enc_cmp(ct, buf, pk, kr + KYBER_SYMBYTES);                          /* coins are in kr+KYBER_SYMBYTES */
+    fail = masked_indcpa_enc_cmp(ct, buf, pk, kr + KYBER_SYMBYTES);                  /* coins are in kr+KYBER_SYMBYTES */
 
-    hash_h(kr + KYBER_SYMBYTES, ct, KYBER_CIPHERTEXTBYTES);                           /* overwrite coins in kr with H(c)  */
+    hash_h(kr + KYBER_SYMBYTES, ct, KYBER_CIPHERTEXTBYTES);                          /* overwrite coins in kr with H(c)  */
 
-    cmov(kr, sk + KYBER_SECRETKEYBYTES - KYBER_SYMBYTES, KYBER_SYMBYTES, fail);       /* Overwrite pre-k with z on re-encryption failure */
+    cmov(kr, sk + KYBER_SECRETKEYBYTES - KYBER_SYMBYTES, KYBER_SYMBYTES, fail);      /* Overwrite pre-k with z on re-encryption failure */
 
-    kdf(ss, kr, 2 * KYBER_SYMBYTES);                                                  /* hash concatenation of pre-k and H(c) to k */
+    kdf(ss, kr, 2 * KYBER_SYMBYTES);                                                 /* hash concatenation of pre-k and H(c) to k */
     return 0;
 }

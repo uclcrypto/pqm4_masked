@@ -9,5 +9,4 @@ unsigned char masked_indcpa_enc_cmp(const unsigned char *ct,
 void masked_indcpa_dec(unsigned char *m,
                 const unsigned char *c,
                 const unsigned char *sk);
-
 #endif

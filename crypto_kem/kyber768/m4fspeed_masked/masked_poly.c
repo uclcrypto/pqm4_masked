@@ -41,6 +41,77 @@ void masked_poly_invntt(StrAPoly r) {
     }
 }
 
+/*************************************************
+* Name:        masked_poly_getnoise
+*
+* Description: Sample a polynomial deterministically from a seed and a nonce,
+*              with output polynomial close to centered binomial distribution
+*              with parameter KYBER_ETA
+*
+* Arguments:   - poly *r:                   pointer to output polynomial
+*              - const unsigned char *seed: pointer to input seed (pointing to array of length KYBER_SYMBYTES bytes)
+*              - unsigned char nonce:       one-byte input nonce
+*              - int add:                   boolean to indicate to accumulate into r
+**************************************************/
+void masked_poly_noise(StrAPoly r, const unsigned char *seed, unsigned char nonce, int add) {
+    size_t kappa = KYBER_ETA;
+    unsigned char buf[KYBER_ETA * KYBER_N / 4];
+    unsigned char buf_masked[(KYBER_ETA * KYBER_N / 4)*NSHARES];
+
+    uint32_t a[kappa*NSHARES];
+    uint32_t b[kappa*NSHARES];
+    int16_t out[NSHARES*BSSIZE];
+
+    prf(buf, KYBER_ETA * KYBER_N / 4, seed, nonce);
+    for(int i=0;i<(KYBER_ETA * KYBER_N/4);i++){
+        buf_masked[(0*KYBER_ETA * KYBER_N / 4) + i] = buf[i];
+        for(int d=1;d<NSHARES;d++){
+            buf_masked[(d*KYBER_ETA * KYBER_N / 4) + i] = 0;
+        }
+    }
+
+    // all the bitslice. 32*4 bits =  
+    for(uint32_t i=0;i<KYBER_N/BSSIZE;i++){
+        // all the bits
+        //32*4 bits = 128 bits = 16 bytes
+        for(uint32_t j=0;j<kappa*NSHARES;j++){
+            a[j] = 0; b[j] = 0;
+        }
+        for(int n=0;n<16;n++){
+            for(uint32_t d=0;d<NSHARES;d++){
+                uint32_t bytes_off = i*16 + n;
+                uint32_t by = buf_masked[bytes_off + d*(kappa*KYBER_N/4)];
+                
+                a[d] = (a[d] << 2) | (((by>>0)&0x1)<<1) | (((by>>4)&0x1)<<0);
+                a[NSHARES+d] = (a[NSHARES+d] << 2) | (((by>>1)&0x1)<<1) | (((by>>5)&0x1)<<0);
+
+                b[d] = (b[d] << 2) | (((by>>2)&0x1)<<1) | (((by>>6)&0x1)<<0);
+                b[NSHARES+d] = (b[NSHARES+d] << 2) | (((by>>3)&0x1)<<1) | (((by>>7)&0x1)<<0);
+            }
+        }
+        masked_cbd(NSHARES,
+                2,
+                BSSIZE,
+                KYBER_Q,COEF_NBITS,
+                out,1,NSHARES,
+                a,1,NSHARES,
+                b,1,NSHARES);
+
+
+        for(uint32_t n=0;n<BSSIZE;n++){
+            for(uint32_t j=0;j<NSHARES;j++){
+                if(add){
+                    r[j][(i*32)+31-n] = (r[j][(i*32)+31-n] + out[n*NSHARES+j])%KYBER_Q;
+                }else{
+                    r[j][(i*32)+31-n] = out[n*NSHARES+j];
+                }
+            }
+        }
+    }
+}
+
+
+
 void masked_poly_tomsg(unsigned char *m, StrAPoly str_r){
     APoly r;
     size_t i,j,d;
@@ -110,13 +181,6 @@ void finalize_cmp(uint32_t *bits){
             bits,1,
             other,1);
 
-    for(d=0;d<NSHARES;d++){
-        other[d] = bits[d] >> 8;
-    }
-    masked_and(NSHARES,
-            bits,1,
-            bits,1,
-            other,1);
     for(d=0;d<NSHARES;d++){
         other[d] = bits[d] >> 8;
     }

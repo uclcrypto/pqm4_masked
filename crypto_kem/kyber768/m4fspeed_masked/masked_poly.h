@@ -13,4 +13,6 @@ void masked_poly_cmp(
         const poly *ref);
 
 void finalize_cmp(uint32_t *bits);
+
+void masked_poly_noise(StrAPoly r, const unsigned char *seed, unsigned char nonce, int add);
 #endif
