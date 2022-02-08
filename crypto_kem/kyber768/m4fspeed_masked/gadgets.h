@@ -64,8 +64,11 @@ void seca2b_modp(size_t nshares,
         size_t kbits,
         uint32_t p,
         uint32_t *in, size_t in_msk_stride, size_t in_data_stride);
+void secb2a_1bit(
+        size_t nshares,
+        int16_t *a, size_t a_msk_stride,
+        uint32_t *x, size_t x_msk_stride);
 void secb2a_modp(size_t nshares,
-//        size_t kbits,
         uint32_t p,
         uint32_t *in, size_t in_msk_stride, size_t in_data_stride);
 

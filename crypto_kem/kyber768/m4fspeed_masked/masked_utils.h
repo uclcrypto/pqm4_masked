@@ -18,7 +18,7 @@ inline uint32_t rand32(){
     return get_random();
 }
 
-inline void rand_q(uint16_t v[2]){
+inline void rand_q(int16_t v[2]){
   uint32_t r;
   do{
     r = rand32();

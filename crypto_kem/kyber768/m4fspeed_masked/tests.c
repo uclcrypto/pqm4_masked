@@ -543,6 +543,43 @@ unsigned int test_secb2a_modp(){
     return err;
 }
 
+unsigned int test_secb2a_modp_1bit(){
+    uint32_t q = KYBER_Q;
+    uint32_t coeffs_in1[NSHARES];
+    int16_t coeffs_out[NSHARES];
+
+    int err;
+    size_t i,d;
+
+    err = 0;
+    for(int t =0; t<BSSIZE;t++){ 
+        coeffs_in1[0] = rand32()&0x1;
+        for(i=1;i<NSHARES;i++){
+            int16_t r = rand32() & 0x1;
+            coeffs_in1[i] = r;
+            coeffs_in1[0] ^= r; 
+        }
+
+        secb2a_1bit(NSHARES,
+                coeffs_out,1,
+                coeffs_in1,1);
+
+        uint32_t uin1,uout;
+        uin1 = 0; uout = 0;
+        for(d=0;d<NSHARES;d++){
+            uin1 ^= coeffs_in1[d];
+            uout += coeffs_out[d];
+        }
+        uout = (uout)%q;
+
+        err += (uin1 != uout);
+    }
+
+    report_test("test_secb2a_modp_1bit",err);
+    return err;
+}
+
+
 
 static unsigned umodulus_switch(unsigned x, unsigned q_start, unsigned q_end){
   return (2*q_end*x+q_start)/(2*q_start);
@@ -650,5 +687,4 @@ unsigned int test_cbd(){
 
     report_test("test_cbd",err);
     return err;
-    
 }

@@ -5,7 +5,7 @@
 
 extern inline uint32_t get_random();
 extern inline uint32_t rand32();
-extern inline void rand_q(uint16_t v[2]);
+extern inline void rand_q(int16_t v[2]);
 
 /*************************************************
 * Name:        masked_poly
@@ -16,7 +16,7 @@ extern inline void rand_q(uint16_t v[2]);
 *              - StrAPoly mp: strided masked polynomial
 **************************************************/
 void masked_poly(StrAPoly mp, const poly *p){
-    uint16_t v[2];
+    int16_t v[2];
 
     for(int i=0;i<KYBER_N;i++){
         mp[0][i] = p->coeffs[i];

@@ -451,7 +451,7 @@ void secb2a_modp(size_t nshares,
     int16_t zp_dense[BSSIZE*nshares];
     uint32_t zp_str[COEF_NBITS*nshares];
     uint32_t b_str[COEF_NBITS*nshares];
-    uint16_t r[2];
+    int16_t r[2];
     size_t d,i;
 
     // generate uniform sharing for z
@@ -623,7 +623,7 @@ void secfulladd(size_t nshares,
             y,y_msk_stride);
 
     // write carry out
-    for(int d=0;d<nshares;d++){
+    for(size_t d=0;d<nshares;d++){
         co[d*co_msk_stride] = a[d];
     }
 }
@@ -638,7 +638,7 @@ void masked_cbd(size_t nshares,
 
 
     size_t np = 2*eta;
-    size_t n,i,d,k,j;
+    size_t i,d,k,j;
     uint32_t sp[nshares*np],z_str[nshares*COEF_NBITS];
    
     //  k = ceil(log2(2*eta +1))
@@ -699,5 +699,98 @@ void masked_cbd(size_t nshares,
     for(i=0;i<n_coeffs;i++){
         z[i*nshares] = (z[i*nshares] + p - eta)%p;
     }
+}
+
+
+// algo 7 in SOPG 
+static void secb2a_qbit_n(size_t nshares,
+        int16_t *c,size_t c_msk_stride,
+        int16_t *a,size_t a_msk_stride,
+        uint32_t x){
+    
+    int16_t b[nshares];
+    int16_t r[2];
+    size_t j;
+
+    b[nshares-1] = 0;
+
+    for(j=0;j<nshares-2;j+=2){
+        rand_q(r);
+        
+        b[j] = (a[j*a_msk_stride] - r[0] + KYBER_Q)%KYBER_Q;
+        b[nshares-1] = (b[nshares-1] + r[0])%KYBER_Q;
+
+        b[j+1] = (a[(j+1)*a_msk_stride] - r[1] + KYBER_Q)%KYBER_Q;
+        b[nshares-1] = (b[nshares-1] + r[1])%KYBER_Q;
+    }
+
+    if(((nshares-1)&0x1)==0x1){
+        rand_q(r);
+        j = nshares-2;
+        b[j] = (a[j*a_msk_stride] - r[0] + KYBER_Q)%KYBER_Q;
+        b[nshares-1] = (b[nshares-1] + r[0])%KYBER_Q;
+    }
+
+    for(j=0;j<nshares;j++){
+        c[j*c_msk_stride] = b[j] + 2*KYBER_Q;
+        c[j*c_msk_stride] -= (2*b[j]*x);
+        c[j*c_msk_stride] = c[j*c_msk_stride]%KYBER_Q;
+    }
+    c[0] = (c[0] + x)%KYBER_Q;
+}
+
+// algo 6
+static void b2a_qbit(size_t nshares,
+        int16_t *a,size_t a_msk_stride,
+        uint32_t *x,size_t x_msk_stride){
+
+    a[0] = x[0];
+    for(size_t i=1;i<nshares;i++){
+        secb2a_qbit_n(i+1,
+                a,a_msk_stride,
+                a,a_msk_stride,x[i*x_msk_stride]);
+    }
+}
+
+// algo 8
+static void refresh_add(size_t nshares,int16_t *a,size_t a_msk_stride){
+
+    size_t i,j;
+    int16_t rnd;
+    size_t REFRESH_ADD_POOL_SIZE = (nshares*(nshares+1)/2);
+    int16_t pool[REFRESH_ADD_POOL_SIZE];
+ 
+    for(i=0; i < REFRESH_ADD_POOL_SIZE; i += 2){
+        rand_q(&pool[i]);
+    }
+
+
+    if (((REFRESH_ADD_POOL_SIZE)&0x1) == 1){
+        int16_t r[2];
+        rand_q(r);
+        pool[REFRESH_ADD_POOL_SIZE-1] = r[0];
+    }
+
+    int cpt = 0;
+    for(i=0;i<NSHARES-1;i++){
+        for(j=i+1;j<NSHARES;j++){
+            rnd = pool[cpt];
+            cpt++;
+            a[i*a_msk_stride] = (a[i*a_msk_stride] + rnd)%KYBER_Q;
+            a[j*a_msk_stride] = (a[j*a_msk_stride] + KYBER_Q - rnd)%KYBER_Q;
+        }
+    }
+}
+// algo 5
+void secb2a_1bit(
+        size_t nshares,
+        int16_t *a, size_t a_msk_stride,
+        uint32_t *x, size_t x_msk_stride){
+
+    b2a_qbit(nshares,
+            a,a_msk_stride,
+            x,x_msk_stride);
+    refresh_add(nshares,
+            a,a_msk_stride);
 }
 

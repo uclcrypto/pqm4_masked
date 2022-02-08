@@ -12,6 +12,7 @@ unsigned int test_secadd_constant();
 unsigned int test_seca2b();
 unsigned int test_seca2b_modp();
 unsigned int test_secb2a_modp();
+unsigned int test_secb2a_modp_1bit();
 unsigned int test_seccompress();
 unsigned int test_cbd();
 #endif
