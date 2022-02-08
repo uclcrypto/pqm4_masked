@@ -2,6 +2,7 @@
 #define MASKEDPOLY_H
 #include "masked.h"
 #include "params.h"
+#include "poly.h"
 
 void masked_poly_ntt(StrAPoly r);
 void masked_poly_invntt(StrAPoly r);
