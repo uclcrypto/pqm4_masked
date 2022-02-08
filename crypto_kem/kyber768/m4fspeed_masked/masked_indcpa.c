@@ -119,15 +119,16 @@ unsigned char masked_indcpa_enc_cmp(const unsigned char *c,
         const unsigned char *pk,
         const unsigned char *coins) {
 
+    unsigned char m_masked[KYBER_INDCPA_MSGBYTES*NSHARES];
+    memcpy(m_masked,m,KYBER_INDCPA_MSGBYTES);
+    memset(&m_masked[KYBER_INDCPA_MSGBYTES],0,KYBER_INDCPA_MSGBYTES*(NSHARES-1));
+
     uint64_t rc = 0;
     uint32_t rc_masked[NSHARES];
 
-    polyvec sp;
     poly bp;
     polyvec c_ref;
     poly *pkp = &bp;
-    poly *k = &bp;
-    poly *v = &sp.vec[0];
     const unsigned char *seed = pk+KYBER_POLYVECBYTES;
     int i,d ;
     unsigned char nonce = 0;
@@ -138,6 +139,7 @@ unsigned char masked_indcpa_enc_cmp(const unsigned char *c,
     StrAPolyVec masked_sp;
     StrAPoly masked_bp;
     StrAPoly masked_v;
+    StrAPoly masked_k;
 
     for (i = 0; i < KYBER_K; i++){
 
@@ -173,14 +175,11 @@ unsigned char masked_indcpa_enc_cmp(const unsigned char *c,
 
     masked_poly_noise(masked_v,coins,nonce++,1);
     
-    // TODO mask final message addition and poly comparison
-    unmasked_poly(v,masked_v);
-    poly_frommsg(k, m);
-    poly_add(v, v, k);
-    poly_reduce(v);
-
-    masked_poly(masked_v,v);
-   
+    masked_poly_frommsg(masked_k, m_masked);
+    for(d=0;d<NSHARES;d++){
+        poly_add_i16(masked_v[d], masked_v[d], masked_k[d]);     poly_reduce_i16(masked_v[d]);
+    }
+    
     // Compare masked compress(v) with public compress(v_ref);
     poly v_ref;
     poly_decompress(&v_ref,c+KYBER_POLYVECCOMPRESSEDBYTES);

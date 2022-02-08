@@ -574,7 +574,6 @@ unsigned int test_secb2a_modp_1bit(){
 
         err += (uin1 != uout);
     }
-
     report_test("test_secb2a_modp_1bit",err);
     return err;
 }
