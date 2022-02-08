@@ -1,122 +1,142 @@
 #include "api.h"
 #include "indcpa.h"
+#include "masked.h"
+#include "masked_fips202.h"
 #include "masked_indcpa.h"
 #include "params.h"
 #include "randombytes.h"
 #include "symmetric.h"
-#include "masked_fips202.h"
 #include "verify.h"
-#include "masked.h"
 #include <stdlib.h>
 
 #include <stdlib.h>
 
 /*************************************************
-* Name:        crypto_kem_keypair
-*
-* Description: Generates public and private key
-*              for CCA-secure Kyber key encapsulation mechanism
-*
-* Arguments:   - unsigned char *pk: pointer to output public key (an already allocated array of CRYPTO_PUBLICKEYBYTES bytes)
-*              - unsigned char *sk: pointer to output private key (an already allocated array of CRYPTO_SECRETKEYBYTES bytes)
-*
-* Returns 0 (success)
-**************************************************/
+ * Name:        crypto_kem_keypair
+ *
+ * Description: Generates public and private key
+ *              for CCA-secure Kyber key encapsulation mechanism
+ *
+ * Arguments:   - unsigned char *pk: pointer to output public key (an already
+ *allocated array of CRYPTO_PUBLICKEYBYTES bytes)
+ *              - unsigned char *sk: pointer to output private key (an already
+ *allocated array of CRYPTO_SECRETKEYBYTES bytes)
+ *
+ * Returns 0 (success)
+ **************************************************/
 int crypto_kem_keypair(unsigned char *pk, unsigned char *sk) {
-    size_t i;
-    indcpa_keypair(pk, sk);
-    for (i = 0; i < KYBER_INDCPA_PUBLICKEYBYTES; i++) {
-        sk[i + KYBER_INDCPA_SECRETKEYBYTES] = pk[i];
-    }
-    hash_h(sk + KYBER_SECRETKEYBYTES - 2 * KYBER_SYMBYTES, pk, KYBER_PUBLICKEYBYTES);
-    randombytes(sk + KYBER_SECRETKEYBYTES - KYBER_SYMBYTES, KYBER_SYMBYTES);    /* Value z for pseudo-random output on reject */
-    return 0;
+  size_t i;
+  indcpa_keypair(pk, sk);
+  for (i = 0; i < KYBER_INDCPA_PUBLICKEYBYTES; i++) {
+    sk[i + KYBER_INDCPA_SECRETKEYBYTES] = pk[i];
+  }
+  hash_h(sk + KYBER_SECRETKEYBYTES - 2 * KYBER_SYMBYTES, pk,
+         KYBER_PUBLICKEYBYTES);
+  randombytes(sk + KYBER_SECRETKEYBYTES - KYBER_SYMBYTES,
+              KYBER_SYMBYTES); /* Value z for pseudo-random output on reject */
+  return 0;
 }
 
 /*************************************************
-* Name:        crypto_kem_enc
-*
-* Description: Generates cipher text and shared
-*              secret for given public key
-*
-* Arguments:   - unsigned char *ct:       pointer to output cipher text (an already allocated array of CRYPTO_CIPHERTEXTBYTES bytes)
-*              - unsigned char *ss:       pointer to output shared secret (an already allocated array of CRYPTO_BYTES bytes)
-*              - const unsigned char *pk: pointer to input public key (an already allocated array of CRYPTO_PUBLICKEYBYTES bytes)
-*
-* Returns 0 (success)
-**************************************************/
-int crypto_kem_enc(unsigned char *ct, unsigned char *ss, const unsigned char *pk) {
-    unsigned char  kr[2 * KYBER_SYMBYTES];                                   /* Will contain key, coins */
-    unsigned char buf[2 * KYBER_SYMBYTES];
+ * Name:        crypto_kem_enc
+ *
+ * Description: Generates cipher text and shared
+ *              secret for given public key
+ *
+ * Arguments:   - unsigned char *ct:       pointer to output cipher text (an
+ *already allocated array of CRYPTO_CIPHERTEXTBYTES bytes)
+ *              - unsigned char *ss:       pointer to output shared secret (an
+ *already allocated array of CRYPTO_BYTES bytes)
+ *              - const unsigned char *pk: pointer to input public key (an
+ *already allocated array of CRYPTO_PUBLICKEYBYTES bytes)
+ *
+ * Returns 0 (success)
+ **************************************************/
+int crypto_kem_enc(unsigned char *ct, unsigned char *ss,
+                   const unsigned char *pk) {
+  unsigned char kr[2 * KYBER_SYMBYTES]; /* Will contain key, coins */
+  unsigned char buf[2 * KYBER_SYMBYTES];
 
-    randombytes(buf, KYBER_SYMBYTES);
-    hash_h(buf, buf, KYBER_SYMBYTES);                                        /* Don't release system RNG output */
+  randombytes(buf, KYBER_SYMBYTES);
+  hash_h(buf, buf, KYBER_SYMBYTES); /* Don't release system RNG output */
 
-    hash_h(buf + KYBER_SYMBYTES, pk, KYBER_PUBLICKEYBYTES);                  /* Multitarget countermeasure for coins + contributory KEM */
-    hash_g(kr, buf, 2 * KYBER_SYMBYTES);
+  hash_h(buf + KYBER_SYMBYTES, pk,
+         KYBER_PUBLICKEYBYTES); /* Multitarget countermeasure for coins +
+                                   contributory KEM */
+  hash_g(kr, buf, 2 * KYBER_SYMBYTES);
 
-    indcpa_enc(ct, buf, pk, kr + KYBER_SYMBYTES);                            /* coins are in kr+KYBER_SYMBYTES */
+  indcpa_enc(ct, buf, pk,
+             kr + KYBER_SYMBYTES); /* coins are in kr+KYBER_SYMBYTES */
 
-    hash_h(kr + KYBER_SYMBYTES, ct, KYBER_CIPHERTEXTBYTES);                  /* overwrite coins in kr with H(c) */
-    kdf(ss, kr, 2 * KYBER_SYMBYTES);                                         /* hash concatenation of pre-k and H(c) to k */
-    return 0;
+  hash_h(kr + KYBER_SYMBYTES, ct,
+         KYBER_CIPHERTEXTBYTES); /* overwrite coins in kr with H(c) */
+  kdf(ss, kr,
+      2 * KYBER_SYMBYTES); /* hash concatenation of pre-k and H(c) to k */
+  return 0;
 }
 
 /*************************************************
-* Name:        crypto_kem_dec
-*
-* Description: Generates shared secret for given
-*              cipher text and private key
-*
-* Arguments:   - unsigned char *ss:       pointer to output shared secret (an already allocated array of CRYPTO_BYTES bytes)
-*              - const unsigned char *ct: pointer to input cipher text (an already allocated array of CRYPTO_CIPHERTEXTBYTES bytes)
-*              - const unsigned char *sk: pointer to input private key (an already allocated array of CRYPTO_SECRETKEYBYTES bytes)
-*
-* Returns 0.
-*
-* On failure, ss will contain a pseudo-random value.
-**************************************************/
-int crypto_kem_dec(unsigned char *ss, const unsigned char *ct, const unsigned char *sk) {
-    size_t i,d;
-    unsigned char fail;
-    unsigned char masked_buf[(2*KYBER_SYMBYTES)*NSHARES];                           // contains m' || H(pk) 
-    unsigned char kr[2 * KYBER_SYMBYTES];                                           /* Will contain key, coins */
-    unsigned char masked_kr[(2*KYBER_SYMBYTES)*NSHARES];                            // contains K||coins
-    const unsigned char *pk = sk + KYBER_INDCPA_SECRETKEYBYTES;
+ * Name:        crypto_kem_dec
+ *
+ * Description: Generates shared secret for given
+ *              cipher text and private key
+ *
+ * Arguments:   - unsigned char *ss:       pointer to output shared secret (an
+ *already allocated array of CRYPTO_BYTES bytes)
+ *              - const unsigned char *ct: pointer to input cipher text (an
+ *already allocated array of CRYPTO_CIPHERTEXTBYTES bytes)
+ *              - const unsigned char *sk: pointer to input private key (an
+ *already allocated array of CRYPTO_SECRETKEYBYTES bytes)
+ *
+ * Returns 0.
+ *
+ * On failure, ss will contain a pseudo-random value.
+ **************************************************/
+int crypto_kem_dec(unsigned char *ss, const unsigned char *ct,
+                   const unsigned char *sk) {
+  size_t i, d;
+  unsigned char fail;
+  unsigned char
+      masked_buf[(2 * KYBER_SYMBYTES) * NSHARES]; // contains m' || H(pk)
+  unsigned char kr[2 * KYBER_SYMBYTES];           /* Will contain key, coins */
+  unsigned char masked_kr[(2 * KYBER_SYMBYTES) * NSHARES]; // contains K||coins
+  const unsigned char *pk = sk + KYBER_INDCPA_SECRETKEYBYTES;
 
-    masked_indcpa_dec(masked_buf,
-            2*KYBER_SYMBYTES,
-            1,
-            ct, sk);
+  masked_indcpa_dec(masked_buf, 2 * KYBER_SYMBYTES, 1, ct, sk);
 
-    // TODO store masked secret key
-    // append  un-masked secret key
-    for (d=0; d<NSHARES;d++){
-        for (i = 0; i < KYBER_SYMBYTES; i++) { 
-            masked_buf[(d*KYBER_SYMBYTES*2) + KYBER_SYMBYTES + i] = d == 0 ? sk[KYBER_SECRETKEYBYTES - 2 * KYBER_SYMBYTES + i] : 0;
-        }
+  // TODO store masked secret key
+  // append  un-masked secret key
+  for (d = 0; d < NSHARES; d++) {
+    for (i = 0; i < KYBER_SYMBYTES; i++) {
+      masked_buf[(d * KYBER_SYMBYTES * 2) + KYBER_SYMBYTES + i] =
+          d == 0 ? sk[KYBER_SECRETKEYBYTES - 2 * KYBER_SYMBYTES + i] : 0;
     }
+  }
 
-    //hash_g(kr, buf, 2 * KYBER_SYMBYTES);
-    masked_sha3_512(masked_kr, 2*KYBER_SYMBYTES, 1, masked_buf, 2*KYBER_SYMBYTES, 2*KYBER_SYMBYTES, 1);
+  // hash_g(kr, buf, 2 * KYBER_SYMBYTES);
+  masked_sha3_512(masked_kr, 2 * KYBER_SYMBYTES, 1, masked_buf,
+                  2 * KYBER_SYMBYTES, 2 * KYBER_SYMBYTES, 1);
 
-    fail = masked_indcpa_enc_cmp(ct, 
-            masked_buf, 2*KYBER_SYMBYTES, 1, 
-            pk, masked_kr + KYBER_SYMBYTES, 2*KYBER_SYMBYTES, 1);                  /* coins are in kr+KYBER_SYMBYTES */
+  fail = masked_indcpa_enc_cmp(ct, masked_buf, 2 * KYBER_SYMBYTES, 1, pk,
+                               masked_kr + KYBER_SYMBYTES, 2 * KYBER_SYMBYTES,
+                               1); /* coins are in kr+KYBER_SYMBYTES */
 
-    // masked key derivation
-    hash_h(kr + KYBER_SYMBYTES, ct, KYBER_CIPHERTEXTBYTES);                          /* overwrite coins in kr with H(c)  */
+  // masked key derivation
+  hash_h(kr + KYBER_SYMBYTES, ct,
+         KYBER_CIPHERTEXTBYTES); /* overwrite coins in kr with H(c)  */
 
-    cmov(kr, sk + KYBER_SECRETKEYBYTES - KYBER_SYMBYTES, KYBER_SYMBYTES, fail);      /* Overwrite pre-k with z on re-encryption failure */
+  cmov(kr, sk + KYBER_SECRETKEYBYTES - KYBER_SYMBYTES, KYBER_SYMBYTES,
+       fail); /* Overwrite pre-k with z on re-encryption failure */
 
-    // unmsk K stored in the first half of masked_kr
-    for(d=0;d<NSHARES;d++){
-        for(i=0;i<KYBER_SYMBYTES;i++){
-            kr[i] = (d==0 ? 0 : kr[i]) ^ masked_kr[d*2*KYBER_SYMBYTES + i];
-        }
+  // unmsk K stored in the first half of masked_kr
+  for (d = 0; d < NSHARES; d++) {
+    for (i = 0; i < KYBER_SYMBYTES; i++) {
+      kr[i] = (d == 0 ? 0 : kr[i]) ^ masked_kr[d * 2 * KYBER_SYMBYTES + i];
     }
+  }
 
-    kdf(ss, kr, 2 * KYBER_SYMBYTES);                                                 /* hash concatenation of pre-k and H(c) to k */
+  kdf(ss, kr,
+      2 * KYBER_SYMBYTES); /* hash concatenation of pre-k and H(c) to k */
 
-    return 0;
+  return 0;
 }

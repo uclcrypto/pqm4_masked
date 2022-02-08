@@ -13,7 +13,7 @@
  * coeffs[0] + X*coeffs[1] + X^2*xoeffs[2] + ... + X^{n-1}*coeffs[n-1]
  */
 typedef struct {
-    int16_t coeffs[KYBER_N];
+  int16_t coeffs[KYBER_N];
 } poly;
 
 void poly_compress(unsigned char *r, poly *a);
@@ -32,7 +32,8 @@ void poly_frombytes_mul(poly *r, const unsigned char *a);
 void poly_frommsg(poly *r, const unsigned char msg[KYBER_SYMBYTES]);
 void poly_tomsg(unsigned char msg[KYBER_SYMBYTES], poly *a);
 
-void poly_noise(poly *r, const unsigned char *seed, unsigned char nonce, int add);
+void poly_noise(poly *r, const unsigned char *seed, unsigned char nonce,
+                int add);
 
 void poly_ntt(poly *r);
 void poly_invntt(poly *r);
