@@ -8,6 +8,7 @@
 #include "params.h"
 #include "symmetric.h"
 #include "masked_symmetric.h"
+#include "masked_symmetric-fips202.h"
 #include "gadgets.h"
 
 #include <stdint.h>
@@ -62,7 +63,12 @@ void masked_poly_noise(StrAPoly r, const unsigned char *masked_seed, unsigned ch
     uint32_t b[kappa*NSHARES];
     int16_t out[NSHARES*BSSIZE];
 
-    masked_prf(buf_masked, KYBER_ETA * KYBER_N / 4, masked_seed, nonce);
+    masked_shake256_prf(buf_masked,
+            KYBER_ETA * KYBER_N / 4,
+            KYBER_ETA * KYBER_N / 4,
+            1,
+            masked_seed,KYBER_SYMBYTES,1,
+            nonce);
 
     // all the bitslice. 32*4 bits =  
     for(uint32_t i=0;i<KYBER_N/BSSIZE;i++){

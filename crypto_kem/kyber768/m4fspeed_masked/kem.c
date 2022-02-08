@@ -5,7 +5,7 @@
 #include "randombytes.h"
 #include "symmetric.h"
 #include "verify.h"
-
+#include "masked.h"
 #include <stdlib.h>
 
 #include <stdlib.h>
@@ -76,17 +76,27 @@ int crypto_kem_enc(unsigned char *ct, unsigned char *ss, const unsigned char *pk
 * On failure, ss will contain a pseudo-random value.
 **************************************************/
 int crypto_kem_dec(unsigned char *ss, const unsigned char *ct, const unsigned char *sk) {
-    size_t i;
+    size_t i,d;
     unsigned char fail;
     unsigned char buf[2 * KYBER_SYMBYTES];
     unsigned char kr[2 * KYBER_SYMBYTES];                                             /* Will contain key, coins */
     const unsigned char *pk = sk + KYBER_INDCPA_SECRETKEYBYTES;
+    unsigned char decryption_buf[KYBER_SYMBYTES*NSHARES];
 
-    masked_indcpa_dec(buf, ct, sk);
+    masked_indcpa_dec(decryption_buf,
+            KYBER_SYMBYTES,
+            1,
+            ct, sk);
 
+    for (d=0; d<NSHARES;d++){
+        for (i = 0; i < KYBER_SYMBYTES; i++) {                                   
+            buf[i] = decryption_buf[d*KYBER_SYMBYTES + i] ^ (d==0 ? 0:buf[i]);
+        }
+    }
     for (i = 0; i < KYBER_SYMBYTES; i++) {                                            /* Multitarget countermeasure for coins + contributory KEM */
         buf[KYBER_SYMBYTES + i] = sk[KYBER_SECRETKEYBYTES - 2 * KYBER_SYMBYTES + i];  /* Save hash by storing H(pk) in sk */
     }
+
     hash_g(kr, buf, 2 * KYBER_SYMBYTES);
 
     fail = masked_indcpa_enc_cmp(ct, buf, pk, kr + KYBER_SYMBYTES);                  /* coins are in kr+KYBER_SYMBYTES */

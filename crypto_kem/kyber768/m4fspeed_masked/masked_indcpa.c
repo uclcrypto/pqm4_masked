@@ -209,10 +209,10 @@ unsigned char masked_indcpa_enc_cmp(const unsigned char *c,
 *              - const unsigned char *sk: pointer to input secret key (of length KYBER_INDCPA_SECRETKEYBYTES)
 **************************************************/
 void __attribute__ ((noinline)) masked_indcpa_dec(unsigned char *m, // secret
+                                            size_t o_msk_stride,
+                                            size_t o_data_stride,
                                            const unsigned char *c, // public
                                            const unsigned char *sk) { // secret
-
-
     poly mp, bp, psk;
     poly *v = &bp;
     StrAPoly masked_psk,masked_mp,masked_bp;
@@ -220,8 +220,8 @@ void __attribute__ ((noinline)) masked_indcpa_dec(unsigned char *m, // secret
     poly_unpackdecompress(&mp, c, 0);
     poly_ntt(&mp);
 
-    //poly_frombytes_mul(&mp, sk);
-    
+    // TODO store masked version of the private key 
+    // mask private key  
     poly_frombytes(&psk,sk);
     masked_poly(masked_psk,&psk);
 
@@ -261,10 +261,9 @@ void __attribute__ ((noinline)) masked_indcpa_dec(unsigned char *m, // secret
     unsigned char m_masked[KYBER_INDCPA_MSGBYTES*NSHARES];
     masked_poly_tomsg(m_masked, masked_mp);
     
-    memset(m,0,KYBER_INDCPA_MSGBYTES);
     for(d=0;d<NSHARES;d++){
         for(int i=0;i<KYBER_INDCPA_MSGBYTES;i++){
-            m[i] ^= m_masked[d*KYBER_N  + i];
+            m[i*o_data_stride + d*o_msk_stride] = m_masked[d*KYBER_N  + i];
         }
     }
 
