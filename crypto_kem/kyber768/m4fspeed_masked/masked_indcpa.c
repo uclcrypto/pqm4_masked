@@ -115,13 +115,9 @@ static void masked_matacc(StrAPoly r_masked, StrAPolyVec b_masked, unsigned char
  * Returns:     - boolean byte indicating that re-encrypted ciphertext is NOT equal to the original ciphertext
  **************************************************/
 unsigned char masked_indcpa_enc_cmp(const unsigned char *c,
-        const unsigned char *m,
+        const unsigned char *m_masked, size_t m_msk_stride, size_t m_data_stride,
         const unsigned char *pk,
         const unsigned char *masked_coins, size_t coins_msk_stride, size_t coins_data_stride) {
-
-    unsigned char m_masked[KYBER_INDCPA_MSGBYTES*NSHARES];
-    memcpy(m_masked,m,KYBER_INDCPA_MSGBYTES);
-    memset(&m_masked[KYBER_INDCPA_MSGBYTES],0,KYBER_INDCPA_MSGBYTES*(NSHARES-1));
 
     uint64_t rc = 0;
     uint32_t rc_masked[NSHARES];
@@ -174,7 +170,7 @@ unsigned char masked_indcpa_enc_cmp(const unsigned char *c,
 
     masked_poly_noise(masked_v,masked_coins,coins_msk_stride,coins_data_stride,nonce++,1);
     
-    masked_poly_frommsg(masked_k, m_masked);
+    masked_poly_frommsg(masked_k, m_masked, m_msk_stride,m_data_stride);
     for(d=0;d<NSHARES;d++){
         poly_add_i16(masked_v[d], masked_v[d], masked_k[d]);     poly_reduce_i16(masked_v[d]);
     }

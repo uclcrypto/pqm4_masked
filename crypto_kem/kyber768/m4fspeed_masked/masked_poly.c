@@ -214,15 +214,15 @@ void finalize_cmp(uint32_t *bits){
 }
 
 void masked_poly_frommsg(StrAPoly y,
-                         const uint8_t m[KYBER_INDCPA_MSGBYTES * (NSHARES)])
+                         const uint8_t m[KYBER_INDCPA_MSGBYTES * (NSHARES)],
+                         size_t m_msk_stride, size_t m_data_stride)
 {
     uint32_t t1[NSHARES];
     int16_t t2[NSHARES];
 
     for(int i=0; i < KYBER_N/8; ++i){
         for(int j=0; j < 8; ++j){
-            for(int k=0; k < NSHARES; ++k) t1[k] = (m[i+k*(KYBER_N/8)]>>j)&1; 
-            
+            for(int k=0; k < NSHARES; ++k) t1[k] = (m[i*m_data_stride+k*m_msk_stride]>>j)&1; 
             secb2a_1bit(NSHARES,
                     t2,1,
                     t1,1);

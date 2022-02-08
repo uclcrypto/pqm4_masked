@@ -109,7 +109,9 @@ int crypto_kem_dec(unsigned char *ss, const unsigned char *ct, const unsigned ch
         }
     }
 
-    fail = masked_indcpa_enc_cmp(ct, buf, pk, masked_kr + KYBER_SYMBYTES, 2*KYBER_SYMBYTES, 1);                  /* coins are in kr+KYBER_SYMBYTES */
+    fail = masked_indcpa_enc_cmp(ct, 
+            masked_buf, 2*KYBER_SYMBYTES, 1, 
+            pk, masked_kr + KYBER_SYMBYTES, 2*KYBER_SYMBYTES, 1);                  /* coins are in kr+KYBER_SYMBYTES */
 
     hash_h(kr + KYBER_SYMBYTES, ct, KYBER_CIPHERTEXTBYTES);                          /* overwrite coins in kr with H(c)  */
 
