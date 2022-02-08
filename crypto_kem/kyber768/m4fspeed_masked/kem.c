@@ -4,6 +4,7 @@
 #include "params.h"
 #include "randombytes.h"
 #include "symmetric.h"
+#include "masked_fips202.h"
 #include "verify.h"
 #include "masked.h"
 #include <stdlib.h>
@@ -78,18 +79,17 @@ int crypto_kem_enc(unsigned char *ct, unsigned char *ss, const unsigned char *pk
 int crypto_kem_dec(unsigned char *ss, const unsigned char *ct, const unsigned char *sk) {
     size_t i,d;
     unsigned char fail;
-    unsigned char buf[2 * KYBER_SYMBYTES];
-    unsigned char masked_buf[(2*KYBER_SYMBYTES)*NSHARES];
-    unsigned char kr[2 * KYBER_SYMBYTES];                                             /* Will contain key, coins */
-    unsigned char masked_kr[(2*KYBER_SYMBYTES)*NSHARES];
+    unsigned char masked_buf[(2*KYBER_SYMBYTES)*NSHARES];                           // contains m' || H(pk) 
+    unsigned char kr[2 * KYBER_SYMBYTES];                                           /* Will contain key, coins */
+    unsigned char masked_kr[(2*KYBER_SYMBYTES)*NSHARES];                            // contains K||coins
     const unsigned char *pk = sk + KYBER_INDCPA_SECRETKEYBYTES;
-    unsigned char decryption_buf[KYBER_SYMBYTES*NSHARES];
 
     masked_indcpa_dec(masked_buf,
             2*KYBER_SYMBYTES,
             1,
             ct, sk);
 
+    // TODO store masked secret key
     // append  un-masked secret key
     for (d=0; d<NSHARES;d++){
         for (i = 0; i < KYBER_SYMBYTES; i++) { 
@@ -99,23 +99,22 @@ int crypto_kem_dec(unsigned char *ss, const unsigned char *ct, const unsigned ch
 
     //hash_g(kr, buf, 2 * KYBER_SYMBYTES);
     masked_sha3_512(masked_kr, 2*KYBER_SYMBYTES, 1, masked_buf, 2*KYBER_SYMBYTES, 2*KYBER_SYMBYTES, 1);
-    
-    memset(buf,0,2*KYBER_SYMBYTES);
-    memset(kr,0,2*KYBER_SYMBYTES);
-    for(d=0;d<NSHARES;d++){
-        for(i=0;i<2*KYBER_SYMBYTES;i++){
-            buf[i] ^= masked_buf[d*2*KYBER_SYMBYTES + i];
-            kr[i] ^= masked_kr[d*2*KYBER_SYMBYTES + i];
-        }
-    }
 
     fail = masked_indcpa_enc_cmp(ct, 
             masked_buf, 2*KYBER_SYMBYTES, 1, 
             pk, masked_kr + KYBER_SYMBYTES, 2*KYBER_SYMBYTES, 1);                  /* coins are in kr+KYBER_SYMBYTES */
 
+    // masked key derivation
     hash_h(kr + KYBER_SYMBYTES, ct, KYBER_CIPHERTEXTBYTES);                          /* overwrite coins in kr with H(c)  */
 
     cmov(kr, sk + KYBER_SECRETKEYBYTES - KYBER_SYMBYTES, KYBER_SYMBYTES, fail);      /* Overwrite pre-k with z on re-encryption failure */
+
+    // unmsk K stored in the first half of masked_kr
+    for(d=0;d<NSHARES;d++){
+        for(i=0;i<KYBER_SYMBYTES;i++){
+            kr[i] = (d==0 ? 0 : kr[i]) ^ masked_kr[d*2*KYBER_SYMBYTES + i];
+        }
+    }
 
     kdf(ss, kr, 2 * KYBER_SYMBYTES);                                                 /* hash concatenation of pre-k and H(c) to k */
 

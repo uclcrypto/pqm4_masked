@@ -34,4 +34,3 @@ void masked_shake256_prf(unsigned char *output, size_t outlen, size_t o_msk_stri
     masked_shake256(output, outlen, o_msk_stride, o_data_stride, 
             extkey, KYBER_SYMBYTES+1, KYBER_SYMBYTES+1, 1);
 }
-

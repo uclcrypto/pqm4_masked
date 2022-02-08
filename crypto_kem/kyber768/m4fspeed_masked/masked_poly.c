@@ -7,7 +7,6 @@
 #include "ntt.h"
 #include "params.h"
 #include "symmetric.h"
-#include "masked_symmetric.h"
 #include "masked_symmetric-fips202.h"
 #include "gadgets.h"
 
