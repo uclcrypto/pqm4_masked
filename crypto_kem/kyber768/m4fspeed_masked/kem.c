@@ -79,32 +79,43 @@ int crypto_kem_dec(unsigned char *ss, const unsigned char *ct, const unsigned ch
     size_t i,d;
     unsigned char fail;
     unsigned char buf[2 * KYBER_SYMBYTES];
+    unsigned char masked_buf[(2*KYBER_SYMBYTES)*NSHARES];
     unsigned char kr[2 * KYBER_SYMBYTES];                                             /* Will contain key, coins */
+    unsigned char masked_kr[(2*KYBER_SYMBYTES)*NSHARES];
     const unsigned char *pk = sk + KYBER_INDCPA_SECRETKEYBYTES;
     unsigned char decryption_buf[KYBER_SYMBYTES*NSHARES];
 
-    masked_indcpa_dec(decryption_buf,
-            KYBER_SYMBYTES,
+    masked_indcpa_dec(masked_buf,
+            2*KYBER_SYMBYTES,
             1,
             ct, sk);
 
+    // append  un-masked secret key
     for (d=0; d<NSHARES;d++){
-        for (i = 0; i < KYBER_SYMBYTES; i++) {                                   
-            buf[i] = decryption_buf[d*KYBER_SYMBYTES + i] ^ (d==0 ? 0:buf[i]);
+        for (i = 0; i < KYBER_SYMBYTES; i++) { 
+            masked_buf[(d*KYBER_SYMBYTES*2) + KYBER_SYMBYTES + i] = d == 0 ? sk[KYBER_SECRETKEYBYTES - 2 * KYBER_SYMBYTES + i] : 0;
         }
     }
-    for (i = 0; i < KYBER_SYMBYTES; i++) {                                            /* Multitarget countermeasure for coins + contributory KEM */
-        buf[KYBER_SYMBYTES + i] = sk[KYBER_SECRETKEYBYTES - 2 * KYBER_SYMBYTES + i];  /* Save hash by storing H(pk) in sk */
+
+    //hash_g(kr, buf, 2 * KYBER_SYMBYTES);
+    masked_sha3_512(masked_kr, 2*KYBER_SYMBYTES, 1, masked_buf, 2*KYBER_SYMBYTES, 2*KYBER_SYMBYTES, 1);
+    
+    memset(buf,0,2*KYBER_SYMBYTES);
+    memset(kr,0,2*KYBER_SYMBYTES);
+    for(d=0;d<NSHARES;d++){
+        for(i=0;i<2*KYBER_SYMBYTES;i++){
+            buf[i] ^= masked_buf[d*2*KYBER_SYMBYTES + i];
+            kr[i] ^= masked_kr[d*2*KYBER_SYMBYTES + i];
+        }
     }
 
-    hash_g(kr, buf, 2 * KYBER_SYMBYTES);
-
-    fail = masked_indcpa_enc_cmp(ct, buf, pk, kr + KYBER_SYMBYTES);                  /* coins are in kr+KYBER_SYMBYTES */
+    fail = masked_indcpa_enc_cmp(ct, buf, pk, masked_kr + KYBER_SYMBYTES, 2*KYBER_SYMBYTES, 1);                  /* coins are in kr+KYBER_SYMBYTES */
 
     hash_h(kr + KYBER_SYMBYTES, ct, KYBER_CIPHERTEXTBYTES);                          /* overwrite coins in kr with H(c)  */
 
     cmov(kr, sk + KYBER_SECRETKEYBYTES - KYBER_SYMBYTES, KYBER_SYMBYTES, fail);      /* Overwrite pre-k with z on re-encryption failure */
 
     kdf(ss, kr, 2 * KYBER_SYMBYTES);                                                 /* hash concatenation of pre-k and H(c) to k */
+
     return 0;
 }

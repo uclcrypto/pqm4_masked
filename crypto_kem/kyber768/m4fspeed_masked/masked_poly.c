@@ -55,7 +55,7 @@ void masked_poly_invntt(StrAPoly r) {
 *              - unsigned char nonce:       one-byte input nonce
 *              - int add:                   boolean to indicate to accumulate into r
 **************************************************/
-void masked_poly_noise(StrAPoly r, const unsigned char *masked_seed, unsigned char nonce, int add) {
+void masked_poly_noise(StrAPoly r, const unsigned char *masked_seed, size_t seed_msk_stride, size_t seed_data_stride, unsigned char nonce, int add) {
     size_t kappa = KYBER_ETA;
     unsigned char buf_masked[(KYBER_ETA * KYBER_N / 4)*NSHARES];
 
@@ -67,7 +67,7 @@ void masked_poly_noise(StrAPoly r, const unsigned char *masked_seed, unsigned ch
             KYBER_ETA * KYBER_N / 4,
             KYBER_ETA * KYBER_N / 4,
             1,
-            masked_seed,KYBER_SYMBYTES,1,
+            masked_seed,seed_msk_stride,seed_data_stride,
             nonce);
 
     // all the bitslice. 32*4 bits =  

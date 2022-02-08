@@ -14,7 +14,8 @@ void masked_poly_cmp(
 
 void finalize_cmp(uint32_t *bits);
 
-void masked_poly_noise(StrAPoly r, const unsigned char *seed, unsigned char nonce, int add);
+void masked_poly_noise(StrAPoly r, const unsigned char *seed, size_t seed_msk_stride,size_t seed_data_stride,
+        unsigned char nonce, int add);
 void masked_poly_frommsg(StrAPoly y,
                          const uint8_t m[KYBER_INDCPA_MSGBYTES * (NSHARES)]);
 #endif
