@@ -65,32 +65,6 @@ void shake256_prf(unsigned char *output, size_t outlen, const unsigned char *key
     extkey[i] = nonce;
 
     shake256(output, outlen, extkey, KYBER_SYMBYTES + 1);
-
-#if 1
-    unsigned char masked_extkey[NSHARES*(KYBER_SYMBYTES + 1)];
-    for (i=0; i<KYBER_SYMBYTES+1; i++) {
-        masked_extkey[i] = extkey[i];
-        for (size_t j=1; j<NSHARES; j++) {
-            unsigned char rnd = get_random() & 0xFF;
-            masked_extkey[i] ^= rnd;
-            masked_extkey[i+j*(KYBER_SYMBYTES+1)] = rnd;
-        }
-    }
-    unsigned char *masked_output = malloc(outlen*NSHARES);
-    masked_shake256(masked_output, outlen, outlen, 1, masked_extkey,
-            KYBER_SYMBYTES+1, KYBER_SYMBYTES+1, 1);
-    for (i=0; i<outlen; i++) {
-        unsigned char o = output[i];
-        output[i] = 0;
-        for (size_t j=0; j<NSHARES; j++) {
-            output[i] ^= masked_output[i+j*outlen];
-        }
-        if (o != output[i]) {
-            BAIL("ERROR shake256 out %i %x %x", i, o, output[i]);
-        }
-    }
-    free(masked_output);
-#endif
 }
 
 void sha3_512_masked_check(uint8_t *output, const uint8_t *input, size_t inlen) {

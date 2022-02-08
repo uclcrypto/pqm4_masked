@@ -122,6 +122,9 @@ unsigned char masked_indcpa_enc_cmp(const unsigned char *c,
     unsigned char m_masked[KYBER_INDCPA_MSGBYTES*NSHARES];
     memcpy(m_masked,m,KYBER_INDCPA_MSGBYTES);
     memset(&m_masked[KYBER_INDCPA_MSGBYTES],0,KYBER_INDCPA_MSGBYTES*(NSHARES-1));
+    unsigned char coins_masked[KYBER_SYMBYTES*NSHARES];
+    memcpy(coins_masked,coins,KYBER_SYMBYTES);
+    memset(&coins_masked[KYBER_SYMBYTES],0,KYBER_SYMBYTES*(NSHARES-1));
 
     uint64_t rc = 0;
     uint32_t rc_masked[NSHARES];
@@ -142,8 +145,7 @@ unsigned char masked_indcpa_enc_cmp(const unsigned char *c,
     StrAPoly masked_k;
 
     for (i = 0; i < KYBER_K; i++){
-
-        masked_poly_noise(masked_sp[i],coins,nonce++,0);
+        masked_poly_noise(masked_sp[i],coins_masked,nonce++,0);
         masked_poly_ntt(masked_sp[i]);
     }
 
@@ -152,7 +154,7 @@ unsigned char masked_indcpa_enc_cmp(const unsigned char *c,
 
         masked_matacc(masked_bp, masked_sp, i, seed, 1);
         masked_poly_invntt(masked_bp);
-        masked_poly_noise(masked_bp,coins,nonce++,1);
+        masked_poly_noise(masked_bp,coins_masked,nonce++,1);
         for(int j=0;j<KYBER_N;j++){
             c_ref.vec[i].coeffs[j] = compress(c_ref.vec[i].coeffs[j],KYBER_Q,KYBER_DU);
         }
@@ -173,7 +175,7 @@ unsigned char masked_indcpa_enc_cmp(const unsigned char *c,
 
     masked_poly_invntt(masked_v);
 
-    masked_poly_noise(masked_v,coins,nonce++,1);
+    masked_poly_noise(masked_v,coins_masked,nonce++,1);
     
     masked_poly_frommsg(masked_k, m_masked);
     for(d=0;d<NSHARES;d++){

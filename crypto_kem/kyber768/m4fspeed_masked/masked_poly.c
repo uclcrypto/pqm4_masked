@@ -7,6 +7,7 @@
 #include "ntt.h"
 #include "params.h"
 #include "symmetric.h"
+#include "masked_symmetric.h"
 #include "gadgets.h"
 
 #include <stdint.h>
@@ -53,22 +54,15 @@ void masked_poly_invntt(StrAPoly r) {
 *              - unsigned char nonce:       one-byte input nonce
 *              - int add:                   boolean to indicate to accumulate into r
 **************************************************/
-void masked_poly_noise(StrAPoly r, const unsigned char *seed, unsigned char nonce, int add) {
+void masked_poly_noise(StrAPoly r, const unsigned char *masked_seed, unsigned char nonce, int add) {
     size_t kappa = KYBER_ETA;
-    unsigned char buf[KYBER_ETA * KYBER_N / 4];
     unsigned char buf_masked[(KYBER_ETA * KYBER_N / 4)*NSHARES];
 
     uint32_t a[kappa*NSHARES];
     uint32_t b[kappa*NSHARES];
     int16_t out[NSHARES*BSSIZE];
 
-    prf(buf, KYBER_ETA * KYBER_N / 4, seed, nonce);
-    for(int i=0;i<(KYBER_ETA * KYBER_N/4);i++){
-        buf_masked[(0*KYBER_ETA * KYBER_N / 4) + i] = buf[i];
-        for(int d=1;d<NSHARES;d++){
-            buf_masked[(d*KYBER_ETA * KYBER_N / 4) + i] = 0;
-        }
-    }
+    masked_prf(buf_masked, KYBER_ETA * KYBER_N / 4, masked_seed, nonce);
 
     // all the bitslice. 32*4 bits =  
     for(uint32_t i=0;i<KYBER_N/BSSIZE;i++){
@@ -96,7 +90,6 @@ void masked_poly_noise(StrAPoly r, const unsigned char *seed, unsigned char nonc
                 out,1,NSHARES,
                 a,1,NSHARES,
                 b,1,NSHARES);
-
 
         for(uint32_t n=0;n<BSSIZE;n++){
             for(uint32_t j=0;j<NSHARES;j++){
