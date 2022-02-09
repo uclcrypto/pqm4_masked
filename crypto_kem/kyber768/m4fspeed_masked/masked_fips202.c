@@ -65,6 +65,7 @@ static const uint64_t RC[24] = {1ULL,
   v = 0;                                                                       \
   REPEAT5(e; v += s;)
 
+
 void masked_keccak(MaskedKeccakState *state) {
   uint8_t x, y;
   for (int i = 0; i < NROUNDS; i++) {

@@ -3,7 +3,7 @@
 #include "params.h"
 #include <stdint.h>
 
-#define NSHARES 2
+#define NSHARES 4
 #define COEF_NBITS 12
 
 #define BSSIZE 32

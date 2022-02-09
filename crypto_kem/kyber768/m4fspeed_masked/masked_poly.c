@@ -1,3 +1,4 @@
+#include "bench.h"
 #include "masked_poly.h"
 #include "masked.h"
 #include "masked_representations.h"
@@ -70,7 +71,6 @@ void masked_poly_noise(StrAPoly r, const unsigned char *masked_seed,
   masked_shake256_prf(buf_masked, KYBER_ETA * KYBER_N / 4,
                       KYBER_ETA * KYBER_N / 4, 1, masked_seed, seed_msk_stride,
                       seed_data_stride, nonce);
-
   // all the bitslice. 32*4 bits =
   for (uint32_t i = 0; i < KYBER_N / BSSIZE; i++) {
     // all the bits
@@ -112,6 +112,7 @@ void masked_poly_noise(StrAPoly r, const unsigned char *masked_seed,
 }
 
 void masked_poly_tomsg(unsigned char *m, StrAPoly str_r) {
+  start_bench(my_tomsg);
   APoly r;
   size_t i, j, d;
   uint32_t bits[NSHARES];
@@ -124,15 +125,21 @@ void masked_poly_tomsg(unsigned char *m, StrAPoly str_r) {
 
     for (d = 0; d < NSHARES; d++) {
       for (j = 0; j < BSSIZE / 8; j++) {
-        m[d * KYBER_N + (i / 8) + j] = (bits[d] >> (j * 8)) & 0xFF;
+        m[d * KYBER_N +  (i / 8) + j] = (bits[d] >> (j * 8)) & 0xFF;
       }
     }
   }
+  stop_bench(my_tomsg);
 }
 
+// C -> compression factor
+// rc -> check state
+// mp -> masked polynoamil
+// ref -> unmasked polynomial
 void masked_poly_cmp(size_t c, uint32_t *rc, const StrAPoly mp,
                      const poly *ref) {
 
+  start_bench(my_masked_poly_cmp);
   APoly r;
   size_t i, b;
   uint32_t bits[NSHARES * c];
@@ -157,8 +164,10 @@ void masked_poly_cmp(size_t c, uint32_t *rc, const StrAPoly mp,
       masked_and(NSHARES, rc, 1, rc, 1, &bits[b * NSHARES], 1);
     }
   }
+  stop_bench(my_masked_poly_cmp);
 }
 void finalize_cmp(uint32_t *bits) {
+  start_bench(my_cmp_finalize);
   uint32_t other[NSHARES];
   int d;
   for (d = 0; d < NSHARES; d++) {
@@ -185,11 +194,15 @@ void finalize_cmp(uint32_t *bits) {
     other[d] = bits[d] >> 1;
   }
   masked_and(NSHARES, bits, 1, bits, 1, other, 1);
+
+  stop_bench(my_cmp_finalize);
 }
 
 void masked_poly_frommsg(StrAPoly y,
                          const uint8_t m[KYBER_INDCPA_MSGBYTES * (NSHARES)],
                          size_t m_msk_stride, size_t m_data_stride) {
+
+  start_bench(my_frommsg);
   uint32_t t1[NSHARES];
   int16_t t2[NSHARES];
 
@@ -203,4 +216,5 @@ void masked_poly_frommsg(StrAPoly y,
         y[k][i * 8 + j] = (t2[k] * ((KYBER_Q + 1) / 2)) % KYBER_Q;
     }
   }
+  stop_bench(my_frommsg);
 }

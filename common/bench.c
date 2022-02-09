@@ -54,7 +54,7 @@ void start_bench(bench_case bench) {
 #if (BENCH)
     bench_struct *b = &benches[bench];
     if (b->running) {
-        ERROR("bench running");
+        ERROR("bench running: %s", bench_cases_names[bench]);
     }
     b->running = true;
     b->start_time = GET_TIME();
@@ -66,7 +66,7 @@ void stop_bench(bench_case bench) {
     uint32_t t = GET_TIME();
     bench_struct *b = &benches[bench];
     if (!b->running) {
-        ERROR("bench not running");
+        ERROR("bench not running: %s", bench_cases_names[bench]);
     }
     b->running = false;
     b->tot_time += t- b->start_time;
@@ -83,15 +83,18 @@ uint32_t bench_tot_calls(bench_case bench) {
 }
 
 void print_bench(bench_case bench, const char *s) {
-    char buf[100];
-    sprintf(buf, "%s %s calls:", s, bench_cases_names[bench]);
-    printcycles(buf, bench_tot_calls(bench));
+    char buf[200];
+//    sprintf(buf, "%s %s calls:", s, bench_cases_names[bench]);
+    sprintf(buf, "%s:%s,%ld,%ld",s,bench_cases_names[bench],bench_tot_calls(bench),bench_tot_time(bench));
+    hal_send_str(buf);
+/*    printcycles(buf, bench_tot_calls(bench));
 #if BENCH_RND
     sprintf(buf, "%s %s rnd:", s, bench_cases_names[bench]);
 #else
     sprintf(buf, "%s %s cycles:", s, bench_cases_names[bench]);
 #endif
     printcycles(buf, bench_tot_time(bench));
+*/
 }
 
 void print_all_benches(const char *s) {

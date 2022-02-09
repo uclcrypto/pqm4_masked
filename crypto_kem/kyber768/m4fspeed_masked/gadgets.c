@@ -1,3 +1,4 @@
+#include "bench.h"
 #include "gadgets.h"
 #include "masked.h"
 #include "masked_representations.h"
@@ -70,6 +71,10 @@ void secadd(size_t nshares, size_t kbits, size_t kbits_out, uint32_t *out,
             size_t out_msk_stride, size_t out_data_stride, const uint32_t *in1,
             size_t in1_msk_stride, size_t in1_data_stride, const uint32_t *in2,
             size_t in2_msk_stride, size_t in2_data_stride) {
+  
+  if(nshares == NSHARES){
+    start_bench(my_secadd);
+  }
 
   size_t i, d;
   uint32_t carry[nshares];
@@ -96,18 +101,24 @@ void secadd(size_t nshares, size_t kbits, size_t kbits_out, uint32_t *out,
     }
 
     if ((i == (kbits - 1)) && (i == (kbits_out - 1))) {
-      return;
+      break;
     } else if (i == (kbits - 1)) {
       masked_and(nshares, carry, 1, xpy, 1, xpc, 1);
       masked_xor(nshares, &out[(kbits)*out_data_stride], out_msk_stride, carry,
                  1, &in1[i * in1_data_stride], in1_msk_stride);
-      return;
+      break;
     }
 
     masked_and(nshares, carry, 1, xpy, 1, xpc, 1);
     masked_xor(nshares, carry, 1, carry, 1, &in1[i * in1_data_stride],
                in1_msk_stride);
   }
+
+  if(nshares == NSHARES){
+    stop_bench(my_secadd);
+  }
+
+
 }
 
 void secadd_constant_bmsk(size_t nshares, size_t kbits, size_t kbits_out,
@@ -273,6 +284,9 @@ void seca2b(size_t nshares, size_t kbits, uint32_t *in, size_t in_msk_stride,
             size_t in_data_stride) {
 
   // TODO optimize inplace ?
+  if(nshares == NSHARES)
+    start_bench(my_seca2b);
+
   size_t i, d;
 
   if (nshares == 1) {
@@ -303,6 +317,9 @@ void seca2b(size_t nshares, size_t kbits, uint32_t *in, size_t in_msk_stride,
 
   secadd(nshares, kbits, kbits, in, in_msk_stride, in_data_stride, expanded_low,
          1, nshares, expanded_high, 1, nshares);
+ 
+  if(nshares == NSHARES)
+    stop_bench(my_seca2b);
 }
 
 void seca2b_modp(size_t nshares, size_t kbits, uint32_t p, uint32_t *in,
@@ -506,6 +523,7 @@ void masked_cbd(size_t nshares, size_t eta, size_t n_coeffs, size_t p,
                 size_t a_data_stride, uint32_t *b, size_t b_msk_stride,
                 size_t b_data_stride) {
 
+  start_bench(my_cbd);
   size_t np = 2 * eta;
   size_t i, d, k, j;
   uint32_t sp[nshares * np], z_str[nshares * COEF_NBITS];
@@ -561,6 +579,7 @@ void masked_cbd(size_t nshares, size_t eta, size_t n_coeffs, size_t p,
   for (i = 0; i < n_coeffs; i++) {
     z[i * nshares] = (z[i * nshares] + p - eta) % p;
   }
+  stop_bench(my_cbd);
 }
 
 // algo 7 in SOPG
