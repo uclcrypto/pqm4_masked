@@ -160,25 +160,34 @@ unsigned char masked_indcpa_enc_cmp(const unsigned char *c,
     masked_poly_ntt(masked_sp[i]);
   }
 
+  // unpack reference ciphertext
   polyvec_decompress(&c_ref, c);
+  for( i=0; i< KYBER_K;i++){
+    for (int j = 0; j < KYBER_N; j++) {
+        c_ref.vec[i].coeffs[j] =
+            compress(c_ref.vec[i].coeffs[j], KYBER_Q, KYBER_DU);
+    }
+  }
+  poly v_ref;
+  poly_decompress(&v_ref, c + KYBER_POLYVECCOMPRESSEDBYTES);
+  for (int j = 0; j < KYBER_N; j++) {
+    v_ref.coeffs[j] = compress(v_ref.coeffs[j], KYBER_Q, KYBER_DV);
+  }
+
   for (i = 0; i < KYBER_K; i++) {
 
     masked_matacc(masked_bp, masked_sp, i, seed, 1);
     masked_poly_invntt(masked_bp);
     masked_poly_noise(masked_bp, masked_coins, coins_msk_stride,
                       coins_data_stride, nonce++, 1);
-    for (int j = 0; j < KYBER_N; j++) {
-      c_ref.vec[i].coeffs[j] =
-          compress(c_ref.vec[i].coeffs[j], KYBER_Q, KYBER_DU);
-    }
     masked_poly_cmp(KYBER_DU, rc_masked, masked_bp, &c_ref.vec[i]);
   }
 
+  // multiply sp vector with public key vector
   poly_frombytes(pkp, pk);
   for (d = 0; d < NSHARES; d++) {
     poly_basemul_i16(masked_v[d], pkp->coeffs, masked_sp[0][d]);
   }
-
   for (i = 1; i < KYBER_K; i++) {
     poly_frombytes(pkp, pk + i * KYBER_POLYBYTES);
     for (d = 0; d < NSHARES; d++) {
@@ -197,14 +206,9 @@ unsigned char masked_indcpa_enc_cmp(const unsigned char *c,
     poly_reduce_i16(masked_v[d]);
   }
 
-  // Compare masked compress(v) with public compress(v_ref);
-  poly v_ref;
-  poly_decompress(&v_ref, c + KYBER_POLYVECCOMPRESSEDBYTES);
-  for (int j = 0; j < KYBER_N; j++) {
-    v_ref.coeffs[j] = compress(v_ref.coeffs[j], KYBER_Q, KYBER_DV);
-  }
   masked_poly_cmp(KYBER_DV, rc_masked, masked_v, &v_ref);
 
+  // AND 32 bits together and unmask the result.
   finalize_cmp(rc_masked);
   for (d = 0; d < NSHARES; d++) {
     rc ^= rc_masked[d];

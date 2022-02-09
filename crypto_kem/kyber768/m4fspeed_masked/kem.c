@@ -125,15 +125,15 @@ int crypto_kem_dec(unsigned char *ss, const unsigned char *ct,
   hash_h(kr + KYBER_SYMBYTES, ct,
          KYBER_CIPHERTEXTBYTES); /* overwrite coins in kr with H(c)  */
 
-  cmov(kr, sk + KYBER_SECRETKEYBYTES - KYBER_SYMBYTES, KYBER_SYMBYTES,
-       fail); /* Overwrite pre-k with z on re-encryption failure */
-
   // unmsk K stored in the first half of masked_kr
   for (d = 0; d < NSHARES; d++) {
     for (i = 0; i < KYBER_SYMBYTES; i++) {
       kr[i] = (d == 0 ? 0 : kr[i]) ^ masked_kr[d * 2 * KYBER_SYMBYTES + i];
     }
   }
+
+  cmov(kr, sk + KYBER_SECRETKEYBYTES - KYBER_SYMBYTES, KYBER_SYMBYTES,
+       fail); /* Overwrite pre-k with z on re-encryption failure */
 
   kdf(ss, kr,
       2 * KYBER_SYMBYTES); /* hash concatenation of pre-k and H(c) to k */
