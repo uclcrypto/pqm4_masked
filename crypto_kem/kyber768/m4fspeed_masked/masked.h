@@ -3,7 +3,11 @@
 #include "params.h"
 #include <stdint.h>
 
+#ifndef NSHARES
+#error "NSHARES missing"
 #define NSHARES 4
+#endif
+
 #define COEF_NBITS 12
 
 #define BSSIZE 32

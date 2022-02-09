@@ -85,7 +85,7 @@ uint32_t bench_tot_calls(bench_case bench) {
 void print_bench(bench_case bench, const char *s) {
     char buf[200];
 //    sprintf(buf, "%s %s calls:", s, bench_cases_names[bench]);
-    sprintf(buf, "%s:%s,%ld,%ld",s,bench_cases_names[bench],bench_tot_calls(bench),bench_tot_time(bench));
+    sprintf(buf, "%s,%s,%d,%ld,%ld",s,bench_cases_names[bench],NSHARES,bench_tot_calls(bench),bench_tot_time(bench));
     hal_send_str(buf);
 /*    printcycles(buf, bench_tot_calls(bench));
 #if BENCH_RND

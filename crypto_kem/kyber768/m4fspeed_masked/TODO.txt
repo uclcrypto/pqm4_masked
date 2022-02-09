@@ -1,0 +1,10 @@
+Overheads compared to only generating randomness for:
+  - secadd
+  - and
+  - a2b
+  - b2a
+  - keccak
+
+
+- NSHARES as CFLAG + RNG benchmark
+- Cost of pack & unpack

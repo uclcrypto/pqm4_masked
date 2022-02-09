@@ -57,7 +57,7 @@ int main(void)
       hal_send_str("ERROR KEYS\n");
     }
     else {
-      hal_send_str("OK KEYS\n");
+      //hal_send_str("OK KEYS\n");
     }
     hal_send_str("+");
   }

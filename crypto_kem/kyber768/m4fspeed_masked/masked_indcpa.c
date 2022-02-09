@@ -284,7 +284,7 @@ masked_indcpa_dec(unsigned char *m, // secret
 
   for (d = 0; d < NSHARES; d++) {
     for (int i = 0; i < KYBER_INDCPA_MSGBYTES; i++) {
-      m[i * o_data_stride + d * o_msk_stride] = m_masked[d * KYBER_N + i];
+      m[i * o_data_stride + d * o_msk_stride] = m_masked[d * KYBER_INDCPA_MSGBYTES + i];
     }
   }
 

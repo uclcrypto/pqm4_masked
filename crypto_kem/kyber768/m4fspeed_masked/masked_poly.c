@@ -125,7 +125,7 @@ void masked_poly_tomsg(unsigned char *m, StrAPoly str_r) {
 
     for (d = 0; d < NSHARES; d++) {
       for (j = 0; j < BSSIZE / 8; j++) {
-        m[d * KYBER_N +  (i / 8) + j] = (bits[d] >> (j * 8)) & 0xFF;
+        m[d * KYBER_INDCPA_MSGBYTES +  (i / 8) + j] = (bits[d] >> (j * 8)) & 0xFF;
       }
     }
   }
