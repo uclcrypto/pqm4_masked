@@ -43,6 +43,11 @@ typedef struct {
     bool running;
 } bench_struct;
 
+#define X(x) #x,
+static const char* bench_cases_names[] = { BENCH_CASES };
+#undef X
+#define N_BENCH_CASES (sizeof(bench_cases_names)/sizeof(const char *))
+
 bench_struct benches[N_BENCH_CASES] = { 0 };
 
 
@@ -62,6 +67,8 @@ void start_bench(bench_case bench) {
     }
     b->running = true;
     b->start_time = GET_TIME();
+#else
+    (void) bench; // avoid unused variable warning
 #endif
 }
 
@@ -75,6 +82,8 @@ void stop_bench(bench_case bench) {
     b->running = false;
     b->tot_time += t- b->start_time;
     b->n_calls += 1;
+#else
+    (void) bench; // avoid unused variable warning
 #endif
 }
 
