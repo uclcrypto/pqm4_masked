@@ -20,7 +20,7 @@ static inline uint32_t pini_and_core(uint32_t a, uint32_t b, uint32_t r) {
   return s;
 }
 
-void masked_and(size_t nshares, uint32_t *z, size_t z_stride, const uint32_t *a,
+static void masked_and_internal(size_t nshares, uint32_t *z, size_t z_stride, const uint32_t *a,
                 size_t a_stride, const uint32_t *b, size_t b_stride) {
   uint32_t ztmp[nshares];
   uint32_t r;
@@ -43,6 +43,44 @@ void masked_and(size_t nshares, uint32_t *z, size_t z_stride, const uint32_t *a,
   }
 }
 
+void masked_and(size_t nshares, uint32_t *z, size_t z_stride, const uint32_t *a,
+                size_t a_stride, const uint32_t *b, size_t b_stride) {
+  if(nshares == 1){
+    z[0] = a[0] & b[0];
+  }else if(nshares == 2){
+   masked_and_internal(2,z,z_stride,a,a_stride,b,b_stride); 
+  }else if(nshares == 3){
+   masked_and_internal(3,z,z_stride,a,a_stride,b,b_stride);
+  }else if(nshares == 4){
+   masked_and_internal(4,z,z_stride,a,a_stride,b,b_stride);
+  }else if(nshares == 5){
+   masked_and_internal(5,z,z_stride,a,a_stride,b,b_stride);
+  }else if(nshares == 6){
+   masked_and_internal(6,z,z_stride,a,a_stride,b,b_stride);
+  }else if(nshares == 7){
+   masked_and_internal(7,z,z_stride,a,a_stride,b,b_stride); 
+  }else if(nshares == 8){
+   masked_and_internal(8,z,z_stride,a,a_stride,b,b_stride);
+  }else if(nshares == 9){
+   masked_and_internal(9,z,z_stride,a,a_stride,b,b_stride);
+  }else if(nshares == 10){
+   masked_and_internal(10,z,z_stride,a,a_stride,b,b_stride);
+  }else if(nshares == 11){
+   masked_and_internal(11,z,z_stride,a,a_stride,b,b_stride);
+  }else if(nshares == 12){
+   masked_and_internal(12,z,z_stride,a,a_stride,b,b_stride); 
+  }else if(nshares == 13){
+   masked_and_internal(13,z,z_stride,a,a_stride,b,b_stride);
+  }else if(nshares == 14){
+   masked_and_internal(14,z,z_stride,a,a_stride,b,b_stride);
+  }else if(nshares == 15){
+   masked_and_internal(15,z,z_stride,a,a_stride,b,b_stride);
+  }else if(nshares == 16){
+   masked_and_internal(16,z,z_stride,a,a_stride,b,b_stride);
+  }else{
+   masked_and_internal(nshares,z,z_stride,a,a_stride,b,b_stride);
+  }
+}
 void masked_xor(size_t nshares, uint32_t *out, size_t out_stride,
                 const uint32_t *ina, size_t ina_stride, const uint32_t *inb,
                 size_t inb_stride) {

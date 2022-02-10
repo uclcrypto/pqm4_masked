@@ -6,7 +6,7 @@
 #define printcycles(S, U) send_unsignedll((S), (U))
 
 #if (BENCH_RND)
-#define GET_TIME 0 // TODO
+#define GET_TIME rngcnt_get // TODO
 #else
 #define GET_TIME cyccnt_get
 #endif
@@ -32,7 +32,10 @@ void cyccnt_start() {
 static inline uint32_t cyccnt_get() {
   return DWT_CYCCNT;
 }
-
+uint64_t rng_cnt = 0;
+static inline uint32_t rngcnt_get() {
+  return rng_cnt;
+}
 typedef struct {
     uint32_t start_time;
     uint32_t tot_time;
@@ -41,6 +44,7 @@ typedef struct {
 } bench_struct;
 
 bench_struct benches[N_BENCH_CASES] = { 0 };
+
 
 void reset_bench(bench_case bench) {
     memset(&benches[bench], 0, sizeof(bench_struct));

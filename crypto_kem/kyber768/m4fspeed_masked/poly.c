@@ -1,5 +1,5 @@
 #include "poly.h"
-
+#include "bench.h"
 #include "cbd.h"
 #include "ntt.h"
 #include "params.h"
@@ -489,7 +489,11 @@ void poly_noise(poly *r, const unsigned char *seed, unsigned char nonce,
  *
  * Arguments:   - uint16_t *r: pointer to in/output polynomial
  **************************************************/
-void poly_ntt(poly *r) { ntt(r->coeffs); }
+void poly_ntt(poly *r) { 
+  start_bench(my_ntt);
+  ntt(r->coeffs); 
+  stop_bench(my_ntt);
+}
 
 /*************************************************
  * Name:        poly_invntt
@@ -500,7 +504,11 @@ void poly_ntt(poly *r) { ntt(r->coeffs); }
  *
  * Arguments:   - uint16_t *a: pointer to in/output polynomial
  **************************************************/
-void poly_invntt(poly *r) { invntt(r->coeffs); }
+void poly_invntt(poly *r) { 
+  start_bench(my_ntt);
+  invntt(r->coeffs);
+  stop_bench(my_ntt);
+}
 
 extern void basemul_asm(int16_t *, const int16_t *, const int16_t *,
                         const int16_t *);

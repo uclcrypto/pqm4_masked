@@ -7,10 +7,16 @@
 #include <stdbool.h>
 #include <hal.h>
 
+#ifndef BENCH
+#error "BENCH unset"
 #define BENCH 1 // run bench
-#define BENCH_RND 0 // count randomness instead of time
+#endif
 
-#define BENCH_CASES X(keypair) X(encaps) X(decaps) X(keccak) X(my_secadd) X(my_masked_poly_cmp) X(my_cbd) X(my_tomsg) X(my_frommsg) X(my_cmp_finalize) X(my_matacc) X(my_ntt) X(my_seca2b) 
+#ifndef BENCH_RND
+#define BENCH_RND 0 // count randomness instead of time
+#endif
+
+#define BENCH_CASES X(keypair) X(encaps) X(decaps) X(keccak) X(my_secadd) X(my_masked_poly_cmp) X(my_cbd) X(my_tomsg) X(my_frommsg) X(my_cmp_finalize) X(my_matacc) X(my_ntt) X(my_seca2b)   X(my_dense2bs) X(my_bs2dense)
 
 #define X(x) #x,
 static const char* bench_cases_names[] = { BENCH_CASES };

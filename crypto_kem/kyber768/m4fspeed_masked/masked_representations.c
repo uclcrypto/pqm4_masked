@@ -1,3 +1,4 @@
+#include "bench.h"
 #include "masked_representations.h"
 #include "masked.h"
 #include <stdint.h>
@@ -59,6 +60,7 @@ void masked_dense2bitslice(size_t nshares, size_t n_coeffs, size_t coeffs_size,
                            size_t bitslice_data_stride, int16_t *dense,
                            size_t dense_msk_stride, size_t dense_data_stride) {
 
+  start_bench(my_dense2bs);
   size_t d, c, b;
   for (b = 0; b < coeffs_size; b++) {
     for (d = 0; d < nshares; d++) {
@@ -76,6 +78,7 @@ void masked_dense2bitslice(size_t nshares, size_t n_coeffs, size_t coeffs_size,
       }
     }
   }
+  stop_bench(my_dense2bs);
 }
 
 void masked_dense2bitslice_u32(size_t nshares, size_t n_coeffs,
@@ -85,6 +88,7 @@ void masked_dense2bitslice_u32(size_t nshares, size_t n_coeffs,
                                size_t dense_msk_stride,
                                size_t dense_data_stride) {
 
+  start_bench(my_bs2dense);
   size_t d, c, b;
   for (b = 0; b < coeffs_size; b++) {
     for (d = 0; d < nshares; d++) {
@@ -102,6 +106,7 @@ void masked_dense2bitslice_u32(size_t nshares, size_t n_coeffs,
       }
     }
   }
+  stop_bench(my_bs2dense);
 }
 /*************************************************
  * Name:        masked_bitslice2dense
