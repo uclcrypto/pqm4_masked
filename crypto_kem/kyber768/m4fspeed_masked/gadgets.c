@@ -105,7 +105,7 @@ void copy_sharing(size_t nshares, uint32_t *out, size_t out_stride,
   }
 }
 
-void secadd(size_t nshares, size_t kbits, size_t kbits_out, uint32_t *out,
+static void secadd_internal(size_t nshares, size_t kbits, size_t kbits_out, uint32_t *out,
             size_t out_msk_stride, size_t out_data_stride, const uint32_t *in1,
             size_t in1_msk_stride, size_t in1_data_stride, const uint32_t *in2,
             size_t in2_msk_stride, size_t in2_data_stride) {
@@ -155,8 +155,38 @@ void secadd(size_t nshares, size_t kbits, size_t kbits_out, uint32_t *out,
   if(nshares == NSHARES){
     stop_bench(my_secadd);
   }
+}
 
+void secadd(size_t nshares, size_t kbits, size_t kbits_out, uint32_t *out,
+            size_t out_msk_stride, size_t out_data_stride, const uint32_t *in1,
+            size_t in1_msk_stride, size_t in1_data_stride, const uint32_t *in2,
+            size_t in2_msk_stride, size_t in2_data_stride) {
 
+  if(nshares == 1){
+    secadd_internal(1,kbits,kbits_out,out,out_msk_stride,out_data_stride,
+        in1,in1_msk_stride,in1_data_stride,in2,in2_msk_stride,in2_data_stride);
+  }else if(nshares == 2){
+    secadd_internal(2,kbits,kbits_out,out,out_msk_stride,out_data_stride,
+        in1,in1_msk_stride,in1_data_stride,in2,in2_msk_stride,in2_data_stride);
+  }else if(nshares == 3){
+    secadd_internal(3,kbits,kbits_out,out,out_msk_stride,out_data_stride,
+        in1,in1_msk_stride,in1_data_stride,in2,in2_msk_stride,in2_data_stride);
+  }else if(nshares == 4){
+    secadd_internal(4,kbits,kbits_out,out,out_msk_stride,out_data_stride,
+        in1,in1_msk_stride,in1_data_stride,in2,in2_msk_stride,in2_data_stride);
+  }else if(nshares == 5){
+    secadd_internal(5,kbits,kbits_out,out,out_msk_stride,out_data_stride,
+        in1,in1_msk_stride,in1_data_stride,in2,in2_msk_stride,in2_data_stride);
+  }else if(nshares == 6){
+    secadd_internal(6,kbits,kbits_out,out,out_msk_stride,out_data_stride,
+        in1,in1_msk_stride,in1_data_stride,in2,in2_msk_stride,in2_data_stride);
+  }else if(nshares == 7){
+    secadd_internal(7,kbits,kbits_out,out,out_msk_stride,out_data_stride,
+        in1,in1_msk_stride,in1_data_stride,in2,in2_msk_stride,in2_data_stride);
+  }else{
+    secadd_internal(nshares,kbits,kbits_out,out,out_msk_stride,out_data_stride,
+        in1,in1_msk_stride,in1_data_stride,in2,in2_msk_stride,in2_data_stride);
+  }
 }
 
 void secadd_constant_bmsk(size_t nshares, size_t kbits, size_t kbits_out,
