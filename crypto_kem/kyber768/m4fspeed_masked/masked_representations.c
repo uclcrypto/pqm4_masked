@@ -3,6 +3,57 @@
 #include "masked.h"
 #include <stdint.h>
 
+#include <stdint.h>
+#include <string.h>
+#include <stdio.h>
+
+
+/*************************************************
+ * Name: transpose32
+ *
+ * Description: Transpose 32 x 32 bit matrix
+ *
+ * Arguments:
+ * - uint32_t[32] a: the matrix, updated such that the new value of (a[i] >> j)
+ *   & 0x1 is the initial value of (a[j] >> i) & 0x1.
+ *
+ * Adapted from "Hacker's Delight" by Henry S. Warren, Jr.
+ * at http://www.icodeguru.com/Embedded/Hacker's-Delight/
+ * **************************************************/
+#if 1
+void transpose32(uint32_t a[32]) {
+    int j, k; 
+    uint32_t m, t; 
+    m = 0x0000FFFF; 
+    for (j = 16; j != 0; j = j >> 1, m = m ^ (m << j)) {
+        for (k = 0; k < 32; k = (k + j + 1) & ~j) {
+            t = (a[k+j] ^ (a[k] >> j)) & m; 
+            a[k+j] = a[k+j] ^ t; 
+            a[k] = a[k] ^ (t << j); 
+        } 
+    } 
+}
+#else
+#include <assert.h>
+#define REP5(x) x x x x x
+#define FOR5(init, cond, next, body) do { init; REP5({ { body } next; }) assert(!(cond)); } while(0);
+void transpose32_unrolled(uint32_t a[32]) {
+    int j, k; 
+    uint32_t m, t; 
+    m = 0x0000FFFF; 
+    FOR5(
+    j = 16, j != 0, (j = j >> 1, m = m ^ (m << j)), {
+        for (k = 0; k < 32; k = (k + j + 1) & ~j) {
+            t = (a[k+j] ^ (a[k] >> j)) & m; 
+            a[k+j] = a[k+j] ^ t; 
+            a[k] = a[k] ^ (t << j); 
+        } 
+    } )
+}
+#endif
+
+
+
 /*************************************************
  * Name:        StrAPoly2APoly
  *
@@ -199,6 +250,133 @@ void masked_bitslice2dense(size_t nshares, size_t n_coeffs, size_t coeffs_size,
       dense[c * dense_data_stride + d * dense_msk_stride] = xd0;
       dense[(c+1) * dense_data_stride + d * dense_msk_stride] = xd1;
     }
+  }
+  stop_bench(my_bs2dense);
+}
+
+/*************************************************
+ * Name: masked_dense2bitslice_opt
+ *
+ * Description: maps a dense reprensentation to a bitlisce one
+ * REMARK:
+ *   This is not equivalent to calling masked_dense2bitslice for two blocks!
+ *   The slices of the two blocks are interleaved in the result. This should
+ *   however have no impact is the corresponding bs2dense is used.
+ *
+ *   masked_dense2bitslice_opt(nshares, c, bitslice, bms, bds, dense, dms)
+ *   is equivalent to
+ *   masked_dense2bitslice(
+ *       nshares, BSSIZE, c, bitslice, bms, bds, (int16_t *) dense, dms, 2
+ *   );
+ *   masked_dense2bitslice(
+ *       nshares, BSSIZE, c, bitslice+c, bms, bds, ((int16_t *) dense)+1, dms, 2
+ *   );
+ *
+ *
+ * Arguments:
+ * - uint32_t *bitslice: output bitslice representation. Array of length
+ *   2 x coeffs_size x nshares.
+ * - const uint32_t *dense: input dense reprensetation. Array of length BSSIZE
+ *   x nshares.  Each uint32_t contains 2 coefficients (little-endian encoded).
+ * - size_t coeffs_size: number of bits to represent the dense coefficients
+ *   (<=16)
+ * - size_t nshares: number of shares
+ *
+ *  number of coefficients: 2*BSSIZE
+ *  dense data stride: 1
+ * **************************************************/
+void masked_dense2bitslice_opt(
+        size_t nshares, size_t coeffs_size,
+        uint32_t *bitslice, size_t bitslice_msk_stride, size_t bitslice_data_stride,
+        const uint32_t *dense, size_t dense_msk_stride
+        ) {
+  start_bench(my_dense2bs);
+  uint32_t a[32];
+  for (size_t d=0; d<nshares; d++) {
+      for (size_t i=0; i< 32; i++) {
+          a[i] = dense[i+d*dense_msk_stride];
+      }
+      transpose32(a);
+      for (size_t i=0; i< coeffs_size; i++) {
+          bitslice[d*bitslice_msk_stride+i*bitslice_data_stride] = a[i];
+          bitslice[d*bitslice_msk_stride+(i+coeffs_size)*bitslice_data_stride] = a[i+16];
+      }
+  }
+  stop_bench(my_dense2bs);
+}
+/*************************************************
+ * Name: masked_dense2bitslice_opt_u32
+ *
+ * Description: maps a dense reprensentation to a bitlisce one
+ *
+ * Arguments:
+ * - uint32_t *bitslice: output bitslice representation. Array of length
+ *   coeffs_size x nshares.
+ * - const uint32_t *dense: input dense reprensetation. Array of length BSSIZE
+ *   x nshares.  Each uint32_t contains 1 coefficient.
+ * - size_t coeffs_size: number of bits to represent the dense coefficients
+ *   (<=32)
+ * - size_t nshares: number of shares
+ *
+ *  number of coefficients: BSSIZE
+ *  dense data stride: 1
+ * **************************************************/
+void masked_dense2bitslice_opt_u32(
+        size_t nshares, size_t coeffs_size,
+        uint32_t *bitslice, size_t bitslice_msk_stride, size_t bitslice_data_stride,
+        const uint32_t *dense, size_t dense_msk_stride
+        ) {
+  start_bench(my_dense2bs_u32);
+  uint32_t a[32];
+  for (size_t d=0; d<nshares; d++) {
+      for (size_t i=0; i< 32; i++) {
+          a[i] = dense[i+d*dense_msk_stride];
+      }
+      transpose32(a);
+      for (size_t i=0; i< coeffs_size; i++) {
+          bitslice[d*bitslice_msk_stride+i*bitslice_data_stride] = a[i];
+      }
+  }
+  stop_bench(my_dense2bs_u32);
+}
+
+/*************************************************
+ * Name:        masked_bitslice2dense_opt
+ *
+ * Description: maps a bitslice reprensentation to a dense one
+ *
+ * Arguments:
+ * - const uint32_t *bitslice: input bitslice representation. Array of length
+ *   2 x coeffs_size x nshares.
+ * - uint32_t *dense: output dense reprensetation. Array of length BSSIZE x
+ *   nshares.  Each uint32_t contains 2 coefficients (little-endian ordered).
+ * - size_t coeffs_size: number of bits to represent the dense coefficients
+ *   (<=16)
+ *
+ *  number of coefficients: BSSIZE
+ *  dense data stride: 1
+ * **************************************************/
+void masked_bitslice2dense_opt(
+        size_t nshares, size_t coeffs_size,
+        uint32_t *dense, size_t dense_msk_stride,
+        const uint32_t *bitslice, size_t bitslice_msk_stride, size_t bitslice_data_stride
+        ) {
+  start_bench(my_bs2dense);
+  uint32_t a[32];
+  for (size_t d=0; d<nshares; d++) {
+      for (size_t i=0; i< coeffs_size; i++) {
+          a[i] = bitslice[d*bitslice_msk_stride+i*bitslice_data_stride];
+          a[i+16] = bitslice[d*bitslice_msk_stride+(i+coeffs_size)*bitslice_data_stride];
+      }
+      // Avoid uninitialized vars -> UB :(
+      for (size_t i=0; i< 16; i++) {
+          a[i] = 0;
+          a[i+16] = 0;
+      }
+      transpose32(a);
+      for (size_t i=0; i< 32; i++) {
+          dense[d*dense_msk_stride+i] = a[i];
+      }
   }
   stop_bench(my_bs2dense);
 }
