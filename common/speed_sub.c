@@ -34,7 +34,6 @@ int main(void)
   unsigned char sk[MUPQ_CRYPTO_SECRETKEYBYTES];
   unsigned char pk[MUPQ_CRYPTO_PUBLICKEYBYTES];
   unsigned char ct[MUPQ_CRYPTO_CIPHERTEXTBYTES];
-  unsigned long long t0, t1;
   int i;
 
   hal_setup(CLOCK_BENCHMARK);

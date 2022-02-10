@@ -20,7 +20,7 @@ static inline uint32_t pini_and_core(uint32_t a, uint32_t b, uint32_t r) {
   return s;
 }
 
-static void masked_and_internal(size_t nshares, uint32_t *z, size_t z_stride, const uint32_t *a,
+void masked_and(size_t nshares, uint32_t *z, size_t z_stride, const uint32_t *a,
                 size_t a_stride, const uint32_t *b, size_t b_stride) {
   uint32_t ztmp[nshares];
   uint32_t r;
@@ -43,44 +43,6 @@ static void masked_and_internal(size_t nshares, uint32_t *z, size_t z_stride, co
   }
 }
 
-void masked_and(size_t nshares, uint32_t *z, size_t z_stride, const uint32_t *a,
-                size_t a_stride, const uint32_t *b, size_t b_stride) {
-  if(nshares == 1){
-    z[0] = a[0] & b[0];
-  }else if(nshares == 2){
-   masked_and_internal(2,z,z_stride,a,a_stride,b,b_stride); 
-  }else if(nshares == 3){
-   masked_and_internal(3,z,z_stride,a,a_stride,b,b_stride);
-  }else if(nshares == 4){
-   masked_and_internal(4,z,z_stride,a,a_stride,b,b_stride);
-  }else if(nshares == 5){
-   masked_and_internal(5,z,z_stride,a,a_stride,b,b_stride);
-  }else if(nshares == 6){
-   masked_and_internal(6,z,z_stride,a,a_stride,b,b_stride);
-  }else if(nshares == 7){
-   masked_and_internal(7,z,z_stride,a,a_stride,b,b_stride); 
-  }else if(nshares == 8){
-   masked_and_internal(8,z,z_stride,a,a_stride,b,b_stride);
-  }else if(nshares == 9){
-   masked_and_internal(9,z,z_stride,a,a_stride,b,b_stride);
-  }else if(nshares == 10){
-   masked_and_internal(10,z,z_stride,a,a_stride,b,b_stride);
-  }else if(nshares == 11){
-   masked_and_internal(11,z,z_stride,a,a_stride,b,b_stride);
-  }else if(nshares == 12){
-   masked_and_internal(12,z,z_stride,a,a_stride,b,b_stride); 
-  }else if(nshares == 13){
-   masked_and_internal(13,z,z_stride,a,a_stride,b,b_stride);
-  }else if(nshares == 14){
-   masked_and_internal(14,z,z_stride,a,a_stride,b,b_stride);
-  }else if(nshares == 15){
-   masked_and_internal(15,z,z_stride,a,a_stride,b,b_stride);
-  }else if(nshares == 16){
-   masked_and_internal(16,z,z_stride,a,a_stride,b,b_stride);
-  }else{
-   masked_and_internal(nshares,z,z_stride,a,a_stride,b,b_stride);
-  }
-}
 void masked_xor(size_t nshares, uint32_t *out, size_t out_stride,
                 const uint32_t *ina, size_t ina_stride, const uint32_t *inb,
                 size_t inb_stride) {
@@ -105,7 +67,7 @@ void copy_sharing(size_t nshares, uint32_t *out, size_t out_stride,
   }
 }
 
-static void secadd_internal(size_t nshares, size_t kbits, size_t kbits_out, uint32_t *out,
+void secadd(size_t nshares, size_t kbits, size_t kbits_out, uint32_t *out,
             size_t out_msk_stride, size_t out_data_stride, const uint32_t *in1,
             size_t in1_msk_stride, size_t in1_data_stride, const uint32_t *in2,
             size_t in2_msk_stride, size_t in2_data_stride) {
@@ -154,38 +116,6 @@ static void secadd_internal(size_t nshares, size_t kbits, size_t kbits_out, uint
 
   if(nshares == NSHARES){
     stop_bench(my_secadd);
-  }
-}
-
-void secadd(size_t nshares, size_t kbits, size_t kbits_out, uint32_t *out,
-            size_t out_msk_stride, size_t out_data_stride, const uint32_t *in1,
-            size_t in1_msk_stride, size_t in1_data_stride, const uint32_t *in2,
-            size_t in2_msk_stride, size_t in2_data_stride) {
-
-  if(nshares == 1){
-    secadd_internal(1,kbits,kbits_out,out,out_msk_stride,out_data_stride,
-        in1,in1_msk_stride,in1_data_stride,in2,in2_msk_stride,in2_data_stride);
-  }else if(nshares == 2){
-    secadd_internal(2,kbits,kbits_out,out,out_msk_stride,out_data_stride,
-        in1,in1_msk_stride,in1_data_stride,in2,in2_msk_stride,in2_data_stride);
-  }else if(nshares == 3){
-    secadd_internal(3,kbits,kbits_out,out,out_msk_stride,out_data_stride,
-        in1,in1_msk_stride,in1_data_stride,in2,in2_msk_stride,in2_data_stride);
-  }else if(nshares == 4){
-    secadd_internal(4,kbits,kbits_out,out,out_msk_stride,out_data_stride,
-        in1,in1_msk_stride,in1_data_stride,in2,in2_msk_stride,in2_data_stride);
-  }else if(nshares == 5){
-    secadd_internal(5,kbits,kbits_out,out,out_msk_stride,out_data_stride,
-        in1,in1_msk_stride,in1_data_stride,in2,in2_msk_stride,in2_data_stride);
-  }else if(nshares == 6){
-    secadd_internal(6,kbits,kbits_out,out,out_msk_stride,out_data_stride,
-        in1,in1_msk_stride,in1_data_stride,in2,in2_msk_stride,in2_data_stride);
-  }else if(nshares == 7){
-    secadd_internal(7,kbits,kbits_out,out,out_msk_stride,out_data_stride,
-        in1,in1_msk_stride,in1_data_stride,in2,in2_msk_stride,in2_data_stride);
-  }else{
-    secadd_internal(nshares,kbits,kbits_out,out,out_msk_stride,out_data_stride,
-        in1,in1_msk_stride,in1_data_stride,in2,in2_msk_stride,in2_data_stride);
   }
 }
 
@@ -394,6 +324,8 @@ void seca2b_modp(size_t nshares, size_t kbits, uint32_t p, uint32_t *in,
                  size_t in_msk_stride, size_t in_data_stride) {
 
   size_t i, d;
+  if(nshares == NSHARES)
+    start_bench(my_seca2b_modp);
 
   if (nshares == 1) {
     return;
@@ -432,6 +364,10 @@ void seca2b_modp(size_t nshares, size_t kbits, uint32_t p, uint32_t *in,
 
   secadd_constant_bmsk(nshares, kbits, kbits, in, in_msk_stride, in_data_stride,
                        u, 1, nshares, p, &u[kbits * nshares], 1);
+
+  if(nshares == NSHARES)
+    stop_bench(my_seca2b_modp);
+
 }
 
 void secb2a_modp(size_t nshares,
@@ -545,11 +481,11 @@ void seccompress(size_t nshares, size_t ncoeffs, uint32_t q, uint32_t c,
   }
 
   // map to bitslice
-  masked_dense2bitslice_u32(nshares, ncoeffs, ell + c, bs_expanded, 1, nshares,
-                            in_expanded, 1, nshares);
+  masked_dense2bitslice_u32(NSHARES, ncoeffs, ell + c, bs_expanded, 1, NSHARES,
+                            in_expanded, 1, NSHARES);
 
   // convert A2B
-  seca2b(nshares, ell + c, bs_expanded, 1, nshares);
+  seca2b(NSHARES, ell + c, bs_expanded, 1, NSHARES);
 
   // map to the output
   for (i = 0; i < c; i++) {
