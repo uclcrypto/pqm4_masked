@@ -43,6 +43,11 @@ typedef struct {
     bool running;
 } bench_struct;
 
+#define X(x) #x,
+static const char* bench_cases_names[] = { BENCH_CASES };
+#undef X
+#define N_BENCH_CASES (sizeof(bench_cases_names)/sizeof(const char *))
+
 bench_struct benches[N_BENCH_CASES] = { 0 };
 
 
@@ -88,17 +93,8 @@ uint32_t bench_tot_calls(bench_case bench) {
 
 void print_bench(bench_case bench, const char *s) {
     char buf[200];
-//    sprintf(buf, "%s %s calls:", s, bench_cases_names[bench]);
     sprintf(buf, "%s,%s,%d,%ld,%ld",s,bench_cases_names[bench],NSHARES,bench_tot_calls(bench),bench_tot_time(bench));
     hal_send_str(buf);
-/*    printcycles(buf, bench_tot_calls(bench));
-#if BENCH_RND
-    sprintf(buf, "%s %s rnd:", s, bench_cases_names[bench]);
-#else
-    sprintf(buf, "%s %s cycles:", s, bench_cases_names[bench]);
-#endif
-    printcycles(buf, bench_tot_time(bench));
-*/
 }
 
 void print_all_benches(const char *s) {

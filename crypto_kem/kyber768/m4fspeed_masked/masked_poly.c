@@ -24,9 +24,11 @@
  * Arguments:   - uint16_t *r: pointer to in/output polynomial
  **************************************************/
 void masked_poly_ntt(StrAPoly r) {
+  start_bench(my_ntt);
   for (int d = 0; d < NSHARES; d++) {
     ntt(r[d]);
   }
+  stop_bench(my_ntt);
 }
 
 /*************************************************
@@ -39,9 +41,11 @@ void masked_poly_ntt(StrAPoly r) {
  * Arguments:   - uint16_t *a: pointer to in/output polynomial
  **************************************************/
 void masked_poly_invntt(StrAPoly r) {
+  start_bench(my_ntt);
   for (int d = 0; d < NSHARES; d++) {
     invntt(r[d]);
   }
+  stop_bench(my_ntt);
 }
 
 /*************************************************

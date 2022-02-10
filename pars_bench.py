@@ -22,11 +22,11 @@ def extract_all(df,ds,names,k):
 
 if __name__ == "__main__":
 
-    ds = np.arange(2,7)
+    ds = np.arange(2,17)
     k = "perf"
-    benchs = ['my_cmp_finalize',"decaps","keccak"]
-            #'my_masked_poly_cmp',"my_cbd","my_frommsg","my_tomsg","my_matacc","my_ntt"]
-    benchs +=["my_dense2bs","my_bs2dense"]
+    benchs = ['my_cmp_finalize',"decaps","keccak",
+            'my_masked_poly_cmp',"my_cbd","my_frommsg","my_tomsg","my_matacc","my_ntt"]
+    #benchs +=["my_dense2bs","my_bs2dense"]
     #benchs += ["my_secadd","my_seca2b"]
     
     df = pandas.read_csv("bench_masked_cycles.csv")
@@ -52,7 +52,7 @@ if __name__ == "__main__":
             continue
         plt.plot(ds,cycle/cycles["decaps"],label=k)
         full += cycle
-    #plt.plot(ds,(cycles["decaps"]  - full) / cycles["decaps"],label="others")
+    plt.plot(ds,(cycles["decaps"]  - full) / cycles["decaps"],label="others")
     plt.legend()
     plt.grid(True,which="both",ls="--")
 

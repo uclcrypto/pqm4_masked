@@ -1,7 +1,7 @@
 #!/bin/bash
 
 rm benchmarks/* -rf 
-for D in {2..6}
+for D in {2..16}
 do
     rm -rf obj/ bin/
     echo "------------------------------"
@@ -14,7 +14,7 @@ echo "case,bench,shares,calls,perf" > bench_masked_cycles.csv
 cat benchmarks/speed_sub/crypto_kem/kyber768/m4fspeed_masked/* >> bench_masked_cycles.csv
 
 rm benchmarks/* -rf 
-for D in {2..6}
+for D in {2..16}
 do
     rm -rf obj/ bin/
     echo "------------------------------"

@@ -1,3 +1,4 @@
+#include "bench.h"
 #include "indcpa.h"
 #include "masked.h"
 #include "masked_poly.h"
@@ -42,6 +43,7 @@ extern void doublebasemul_asm_acc(int16_t *r, const int16_t *a,
 static void masked_matacc(StrAPoly r_masked, StrAPolyVec b_masked,
                           unsigned char i, const unsigned char *seed,
                           int transposed) {
+  start_bench(my_matacc);
   unsigned char buf[XOF_BLOCKBYTES + 2];
   unsigned int buflen, off;
   xof_state state;
@@ -105,6 +107,7 @@ static void masked_matacc(StrAPoly r_masked, StrAPolyVec b_masked,
       }
     }
   }
+  stop_bench(my_matacc);
 }
 
 /*************************************************

@@ -18,11 +18,6 @@
 
 #define BENCH_CASES X(keypair) X(encaps) X(decaps) X(keccak) X(my_secadd) X(my_masked_poly_cmp) X(my_cbd) X(my_tomsg) X(my_frommsg) X(my_cmp_finalize) X(my_matacc) X(my_ntt) X(my_seca2b)   X(my_dense2bs) X(my_bs2dense) X(my_seca2b_modp)
 
-#define X(x) #x,
-static const char* bench_cases_names[] = { BENCH_CASES };
-#undef X
-#define N_BENCH_CASES (sizeof(bench_cases_names)/sizeof(const char *))
-
 typedef enum {
 #define X(x) x,
 BENCH_CASES
