@@ -14,11 +14,11 @@ if __name__ == "__main__":
     args, rest = parse_arguments()
     platform, settings = get_platform(args)
     with platform:
-        schemes = [s for s in rest if not s.startwith('--')]
+        schemes = [s for s in rest if not s.startswith('--')]
         if not set(rest).intersection(set(BENCH_TARGETS)):
             print("No benchmark target selected.")
             print(f"Choose some of {', '.join(BENCH_TARGETS)}.")
-        else
+        else:
             if "--stack" in rest or '--all' in rest:
                 test = mupq.StackBenchmark(settings, platform)
                 test.test_all(schemes)
