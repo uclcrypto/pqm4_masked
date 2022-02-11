@@ -369,7 +369,7 @@ void masked_bitslice2dense_opt(
           a[i+16] = bitslice[d*bitslice_msk_stride+(i+coeffs_size)*bitslice_data_stride];
       }
       // Avoid uninitialized vars -> UB :(
-      for (size_t i=0; i< 16; i++) {
+      for (size_t i=coeffs_size; i< 16; i++) {
           a[i] = 0;
           a[i+16] = 0;
       }
