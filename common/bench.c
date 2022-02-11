@@ -67,6 +67,8 @@ void start_bench(bench_case bench) {
     }
     b->running = true;
     b->start_time = GET_TIME();
+#else
+    (void) bench; // avoid unused variable warning
 #endif
 }
 
@@ -80,6 +82,8 @@ void stop_bench(bench_case bench) {
     b->running = false;
     b->tot_time += t- b->start_time;
     b->n_calls += 1;
+#else
+    (void) bench; // avoid unused variable warning
 #endif
 }
 
