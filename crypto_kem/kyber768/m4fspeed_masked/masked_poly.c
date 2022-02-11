@@ -162,22 +162,24 @@ void masked_poly_cmp(size_t c, uint32_t *rc, const StrAPoly mp,
   start_bench(my_masked_poly_cmp);
   APoly r;
   size_t i, b;
-  uint32_t bits[NSHARES * c];
-  uint32_t bits_ref[c];
+  uint32_t bits[2* NSHARES * c];
+  uint32_t bits_ref[2*c];
 
   StrAPoly2APoly(r, mp);
 
-  for (i = 0; i < KYBER_N; i += BSSIZE) {
+  for (i = 0; i < KYBER_N; i += BSSIZE*2) {
 
     // compress masked polynomial
     seccompress(NSHARES, BSSIZE, KYBER_Q, c, bits, 1, NSHARES, r[i], 1,
                 NSHARES);
+    seccompress(NSHARES, BSSIZE, KYBER_Q, c, &bits[NSHARES*c], 1, NSHARES, r[i+BSSIZE], 1,
+                NSHARES);
 
     // map public polynomial to bitslice
-    masked_dense2bitslice(1, BSSIZE, c, bits_ref, 1, 1, &(ref->coeffs[i]), 1,
+    masked_dense2bitslice_opt(1, c, bits_ref, 1, 1, &(ref->coeffs[i]), 1,
                           1);
 
-    for (b = 0; b < c; b++) {
+    for (b = 0; b < 2*c; b++) {
       // public polynomial and public one
       bits[b * NSHARES] ^= bits_ref[b] ^ 0xFFFFFFFF;
 

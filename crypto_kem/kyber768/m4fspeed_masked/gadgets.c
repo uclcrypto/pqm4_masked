@@ -480,6 +480,7 @@ void seccompress(size_t nshares, size_t ncoeffs, uint32_t q, uint32_t c,
 
   uint32_t in_expanded[ncoeffs * nshares];
   uint32_t bs_expanded[(ell + c) * nshares];
+  uint32_t bs_expanded_ref[(ell + c) * nshares];
 
   // map mod q to mod 2^ell.
   uint32_t tmp32;
@@ -497,9 +498,9 @@ void seccompress(size_t nshares, size_t ncoeffs, uint32_t q, uint32_t c,
   }
 
   // map to bitslice
-  masked_dense2bitslice_u32(NSHARES, ncoeffs, ell + c, bs_expanded, 1, NSHARES,
+  masked_dense2bitslice_opt_u32(NSHARES, ell + c, bs_expanded, 1, NSHARES,
                             in_expanded, 1, NSHARES);
-
+  
   // convert A2B
   seca2b(NSHARES, ell + c, bs_expanded, 1, NSHARES);
 
@@ -599,6 +600,7 @@ void masked_cbd(size_t nshares, size_t eta, size_t n_coeffs, size_t p,
   for (i = 0; i < n_coeffs; i++) {
     z[i * nshares] = (z[i * nshares] + p - eta) % p;
   }
+
   stop_bench(my_cbd);
 }
 
