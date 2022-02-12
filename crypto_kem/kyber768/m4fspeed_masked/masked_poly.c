@@ -84,25 +84,27 @@ void masked_poly_noise(StrAPoly r, const unsigned char *masked_seed,
   size_t kappa = KYBER_ETA;
   unsigned char buf_masked[(KYBER_ETA * KYBER_N / 4) * NSHARES];
 
-  uint32_t a[kappa * NSHARES];
-  uint32_t b[kappa * NSHARES];
-  int16_t out[NSHARES * BSSIZE];
+  uint32_t a[kappa * NSHARES * 2];
+  uint32_t b[kappa * NSHARES * 2];
+  int16_t out[NSHARES * BSSIZE * 2];
+  uint32_t bytes_off,by;
 
   masked_shake256_prf(buf_masked, KYBER_ETA * KYBER_N / 4,
                       KYBER_ETA * KYBER_N / 4, 1, masked_seed, seed_msk_stride,
                       seed_data_stride, nonce);
   // all the bitslice. 32*4 bits =
-  for (uint32_t i = 0; i < KYBER_N / BSSIZE; i++) {
+  for (uint32_t i = 0; i < KYBER_N / (2*BSSIZE); i++) {
     // all the bits
     // 32*4 bits = 128 bits = 16 bytes
-    for (uint32_t j = 0; j < kappa * NSHARES; j++) {
+    for (uint32_t j = 0; j < kappa * NSHARES * 2; j++) {
       a[j] = 0;
       b[j] = 0;
     }
-    for (int n = 0; n < 16; n++) {
+
+    for (int n = 0; n < 16; n+=1) {
       for (uint32_t d = 0; d < NSHARES; d++) {
-        uint32_t bytes_off = i * 16 + n;
-        uint32_t by = buf_masked[bytes_off + d * (kappa * KYBER_N / 4)];
+        bytes_off = i * 32 + n;
+        by = buf_masked[bytes_off + d * (kappa * KYBER_N / 4)];
 
         a[d] =
             (a[d] << 2) | (((by >> 0) & 0x1) << 1) | (((by >> 4) & 0x1) << 0);
@@ -113,6 +115,20 @@ void masked_poly_noise(StrAPoly r, const unsigned char *masked_seed,
             (b[d] << 2) | (((by >> 2) & 0x1) << 1) | (((by >> 6) & 0x1) << 0);
         b[NSHARES + d] = (b[NSHARES + d] << 2) | (((by >> 3) & 0x1) << 1) |
                          (((by >> 7) & 0x1) << 0);
+
+        bytes_off = i * 32 + n + 16;
+        by = buf_masked[bytes_off + d * (kappa * KYBER_N / 4)];
+
+        a[d+kappa * NSHARES] =
+            (a[d + kappa * NSHARES] << 2) | (((by >> 0) & 0x1) << 1) | (((by >> 4) & 0x1) << 0);
+        a[NSHARES + d + kappa*NSHARES] = (a[NSHARES + d + kappa*NSHARES] << 2) | (((by >> 1) & 0x1) << 1) |
+                         (((by >> 5) & 0x1) << 0);
+
+        b[d + kappa * NSHARES] =
+            (b[d + kappa*NSHARES] << 2) | (((by >> 2) & 0x1) << 1) | (((by >> 6) & 0x1) << 0);
+        b[NSHARES + d + kappa * NSHARES] = (b[NSHARES + d + kappa*NSHARES] << 2) | (((by >> 3) & 0x1) << 1) |
+                         (((by >> 7) & 0x1) << 0);
+
       }
     }
     masked_cbd(NSHARES, 2, BSSIZE, KYBER_Q, COEF_NBITS, out, 1, NSHARES, a, 1,
@@ -121,10 +137,15 @@ void masked_poly_noise(StrAPoly r, const unsigned char *masked_seed,
     for (uint32_t n = 0; n < BSSIZE; n++) {
       for (uint32_t j = 0; j < NSHARES; j++) {
         if (add) {
-          r[j][(i * 32) + 31 - n] =
-              (r[j][(i * 32) + 31 - n] + out[n * NSHARES + j]) % KYBER_Q;
+          r[j][(i * 64) + 31 - n] =
+              (r[j][(i * 64) + 31 - n] + out[n * NSHARES + j]) % KYBER_Q;
+
+          r[j][(i * 64) + 31 - n + 32] =
+              (r[j][(i * 64) + 31 - n + 32] + out[(n+32) * NSHARES + j]) % KYBER_Q;
+
         } else {
-          r[j][(i * 32) + 31 - n] = out[n * NSHARES + j];
+          r[j][(i * 64) + 31 - n] = out[n * NSHARES + j];
+          r[j][(i * 64) + 31 - n + 32] = out[(n+32) * NSHARES + j];
         }
       }
     }

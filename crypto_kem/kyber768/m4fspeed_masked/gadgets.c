@@ -502,7 +502,6 @@ void seccompress(size_t nshares, size_t ncoeffs, uint32_t q, uint32_t c,
 
   uint32_t in_expanded[ncoeffs * nshares];
   uint32_t bs_expanded[(ell + c) * nshares];
-  uint32_t bs_expanded_ref[(ell + c) * nshares];
 
   // map mod q to mod 2^ell.
   uint32_t tmp32;
