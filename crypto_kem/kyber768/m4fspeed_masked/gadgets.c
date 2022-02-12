@@ -568,8 +568,9 @@ void masked_cbd(size_t nshares, size_t eta, size_t n_coeffs, size_t p,
 
   start_bench(my_cbd);
   size_t np = 2 * eta;
-  size_t i, d, k, j;
-  uint32_t sp[nshares * np], z_str[nshares * COEF_NBITS];
+  size_t i, d, k, j, s;
+  uint32_t sp[nshares * np], z_str_full[nshares * COEF_NBITS *2];
+  uint32_t *a_in,*b_in,*z_str;
 
   //  k = ceil(log2(2*eta +1))
   k = 0;
@@ -579,47 +580,56 @@ void masked_cbd(size_t nshares, size_t eta, size_t n_coeffs, size_t p,
     i >>= 1;
   }
 
-  // copy input puts
-  for (i = 0; i < eta; i++) {
-    for (d = 0; d < nshares; d++) {
-      sp[(i * 2) * nshares + d] = a[i * a_data_stride + d * a_msk_stride];
-      sp[(i * 2) * nshares + nshares + d] =
-          b[i * b_data_stride + d * b_msk_stride];
-      sp[(i * 2) * nshares + nshares + d] ^= (d == 0) ? 0xFFFFFFFF : 0;
+  // compte HW(a)-HW(b) for all 64 input coefficients 
+  // levaraging 32 bus size
+  for(s=0;s<2;s++){
+    // copy input puts
+    a_in = &a[s*(eta)*a_data_stride];
+    b_in = &b[s*(eta)*b_data_stride];
+    z_str = &z_str_full[s*nshares * COEF_NBITS];
+
+    // compute HW(a) - HW(b) for current 32-bit slices
+    for (i = 0; i < eta; i++) {
+      for (d = 0; d < nshares; d++) {
+        sp[(i * 2) * nshares + d] = a_in[i * a_data_stride + d * a_msk_stride];
+        sp[(i * 2) * nshares + nshares + d] =
+            b_in[i * b_data_stride + d * b_msk_stride];
+        sp[(i * 2) * nshares + nshares + d] ^= (d == 0) ? 0xFFFFFFFF : 0;
+      }
+    }
+
+    uint32_t *c;
+    np = 2*eta;
+    for (i = 0; i < k; i++) { // iterate on output bits
+
+      c = &z_str[i * nshares];
+
+      // init the carry
+      for (d = 0; d < nshares; d++) {
+        c[d] = (np & 0x1) ? sp[(np - 1) * nshares + d] : 0;
+      }
+
+      // sum np bits
+      for (j = 0; j < np / 2; j++) {
+        secfulladd(nshares, &sp[j * nshares], 1, c, 1, c, 1,
+                   &sp[(1 + 2 * j) * nshares], 1, &sp[(2 * j) * nshares], 1);
+      }
+      np /= 2;
+    }
+
+    for (i = k; i < COEF_NBITS; i++) {
+      for (d = 0; d < nshares; d++) {
+        z_str[i * nshares + d] = 0;
+      }
     }
   }
 
-  uint32_t *c;
-  for (i = 0; i < k; i++) { // iterate on output bits
+  secb2a_modp(nshares, p, z_str_full, 1, nshares);
 
-    c = &z_str[i * nshares];
+  masked_bitslice2dense_opt(nshares, kbits, z, z_msk_stride,
+                        z_data_stride, z_str_full, 1, nshares);
 
-    // init the carry
-    for (d = 0; d < nshares; d++) {
-      c[d] = (np & 0x1) ? sp[(np - 1) * nshares + d] : 0;
-    }
-
-    // sum np bits
-    for (j = 0; j < np / 2; j++) {
-      secfulladd(nshares, &sp[j * nshares], 1, c, 1, c, 1,
-                 &sp[(1 + 2 * j) * nshares], 1, &sp[(2 * j) * nshares], 1);
-    }
-
-    np /= 2;
-  }
-
-  for (i = k; i < COEF_NBITS; i++) {
-    for (d = 0; d < nshares; d++) {
-      z_str[i * nshares + d] = 0;
-    }
-  }
-
-  secb2a_modp(nshares, p, z_str, 1, nshares);
-
-  masked_bitslice2dense(nshares, n_coeffs, kbits, z, z_msk_stride,
-                        z_data_stride, z_str, 1, nshares);
-
-  for (i = 0; i < n_coeffs; i++) {
+  for (i = 0; i < 2*n_coeffs; i++) {
     z[i * nshares] = (z[i * nshares] + p - eta) % p;
   }
 
