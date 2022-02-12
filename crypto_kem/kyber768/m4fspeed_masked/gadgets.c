@@ -386,15 +386,16 @@ void seca2b_modp(size_t nshares, size_t kbits, uint32_t p, uint32_t *in,
 
 }
 
+// operates on 64 words the time
 void secb2a_modp(size_t nshares,
                  //   size_t kbits, // MUST BE EQUAL TO COEF_NBITS
                  uint32_t p, uint32_t *in, size_t in_msk_stride,
                  size_t in_data_stride) {
 
-  int16_t z_dense[BSSIZE * nshares];
-  int16_t zp_dense[BSSIZE * nshares];
-  uint32_t zp_str[COEF_NBITS * nshares];
-  uint32_t b_str[COEF_NBITS * nshares];
+  int16_t z_dense[2*BSSIZE * nshares];
+  int16_t zp_dense[2*BSSIZE * nshares];
+  uint32_t zp_str[2*COEF_NBITS * nshares];
+  uint32_t b_str[2*COEF_NBITS * nshares];
   int16_t r[2];
   size_t d, i;
 
@@ -408,41 +409,62 @@ void secb2a_modp(size_t nshares,
 
       z_dense[(i + 1) * nshares + d] = r[1];
       zp_dense[(i + 1) * nshares + d] = p - r[1];
+
+      rand_q(r);
+      z_dense[i * nshares + d + (BSSIZE*nshares)] = r[0];
+      zp_dense[i * nshares + d+ (BSSIZE*nshares)] = p - r[0];
+
+      z_dense[(i + 1) * nshares + d+ (BSSIZE*nshares)] = r[1];
+      zp_dense[(i + 1) * nshares + d+ (BSSIZE*nshares)] = p - r[1];
+
     }
 #if ((BSSIZE & 0x1) == 0x1)
     rand_q(r);
     z_dense[(BSSIZE - 1) * nshares + d] = r[0];
     zp_dense[(BSSIZE - 1) * nshares + d] = p - r[0];
+
+    rand_q(r);
+    z_dense[(BSSIZE - 1) * nshares + d+ (BSSIZE*nshares)] = r[0];
+    zp_dense[(BSSIZE - 1) * nshares + d+ (BSSIZE*nshares)] = p - r[0];
 #endif
   }
 
   // map zp to bitslice representation
-  masked_dense2bitslice(nshares - 1, BSSIZE, COEF_NBITS, zp_str, 1, nshares,
+  masked_dense2bitslice_opt(nshares - 1, COEF_NBITS, zp_str, 1, nshares,
                         zp_dense, 1, nshares);
 
   // last shares of zp set to zero
   for (i = 0; i < COEF_NBITS; i++) {
     zp_str[i * nshares + (nshares - 1)] = 0;
+    zp_str[i * nshares + (nshares - 1) + COEF_NBITS*nshares] = 0;
   }
 
   // last shares of zp_str to zero
   seca2b_modp(nshares, COEF_NBITS, p, zp_str, 1, nshares);
+  seca2b_modp(nshares, COEF_NBITS, p, &zp_str[COEF_NBITS*nshares], 1, nshares);
 
   secadd_modp(nshares, COEF_NBITS, p, b_str, 1, nshares, in, in_msk_stride,
               in_data_stride, zp_str, 1, nshares);
+  secadd_modp(nshares, COEF_NBITS, p, &b_str[COEF_NBITS*nshares], 1, nshares, &in[COEF_NBITS*nshares], in_msk_stride,
+              in_data_stride, &zp_str[COEF_NBITS*nshares], 1, nshares);
+
 
   // map z to bistlice in output buffer
-  masked_dense2bitslice(nshares - 1, BSSIZE, COEF_NBITS, in, in_msk_stride,
+  masked_dense2bitslice_opt(nshares - 1, COEF_NBITS, in, in_msk_stride,
                         in_data_stride, z_dense, 1, nshares);
 
   // unmask b_str and set to the last share of the output
   for (i = 0; i < COEF_NBITS; i++) {
     RefreshIOS_rec(&b_str[i * nshares], nshares);
+    RefreshIOS_rec(&b_str[i * nshares + COEF_NBITS*nshares], nshares);
 
     in[i * in_data_stride + (nshares - 1) * in_msk_stride] = 0;
+    in[i * in_data_stride + (nshares - 1) * in_msk_stride + COEF_NBITS*nshares] = 0;
     for (d = 0; d < nshares; d++) {
       in[i * in_data_stride + (nshares - 1) * in_msk_stride] ^=
           b_str[i * nshares + d];
+      in[i * in_data_stride + (nshares - 1) * in_msk_stride + COEF_NBITS*nshares] ^=
+          b_str[i * nshares + d + COEF_NBITS*nshares];
     }
   }
 }

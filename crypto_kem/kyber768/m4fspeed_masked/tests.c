@@ -435,34 +435,37 @@ unsigned int test_secb2a_modp() {
   size_t kbits = COEF_NBITS;
   uint32_t q = KYBER_Q;
   uint32_t mask = ((1 << kbits) - 1);
-  uint32_t in1[kbits * NSHARES];
+  uint32_t in1[kbits * NSHARES * 2];
 
-  int16_t coeffs_in1[NSHARES * BSSIZE];
-  int16_t coeffs_out[NSHARES * BSSIZE];
+  int16_t coeffs_in1[NSHARES * BSSIZE * 2];
+  int16_t coeffs_out[NSHARES * BSSIZE * 2];
 
   int err;
   size_t i, j, d;
 
   for (j = 0; j < BSSIZE; j++) {
     coeffs_in1[j * NSHARES] = rand32() % q;
+    coeffs_in1[j * NSHARES + BSSIZE * NSHARES] = rand32() % q;
     for (i = 1; i < NSHARES; i++) {
       int16_t r = rand32() & mask;
       coeffs_in1[j * NSHARES + i] = r;
       coeffs_in1[j * NSHARES] ^= r;
+
+      r = rand32() & mask;
+      coeffs_in1[j * NSHARES + i+ BSSIZE * NSHARES] = r;
+      coeffs_in1[j * NSHARES+ BSSIZE * NSHARES] ^= r;
     }
   }
-
-  masked_dense2bitslice(NSHARES, BSSIZE, kbits, in1, 1, NSHARES, coeffs_in1, 1,
+  masked_dense2bitslice_opt(NSHARES, kbits, in1, 1, NSHARES, coeffs_in1, 1,
                         NSHARES);
-
   secb2a_modp(NSHARES, q, in1, 1, NSHARES);
 
-  masked_bitslice2dense(NSHARES, BSSIZE, kbits, coeffs_out, 1, NSHARES, in1, 1,
+  masked_bitslice2dense_opt(NSHARES, kbits, coeffs_out, 1, NSHARES, in1, 1,
                         NSHARES);
 
   // check correctness
   err = 0;
-  for (i = 0; i < BSSIZE; i++) {
+  for (i = 0; i < 2*BSSIZE; i++) {
     uint32_t uin1, uout;
     uin1 = 0;
     uout = 0;

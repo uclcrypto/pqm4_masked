@@ -374,7 +374,7 @@ void masked_dense2bitslice_opt_u32(
  * **************************************************/
 void masked_bitslice2dense_opt(
         size_t nshares, size_t coeffs_size,
-        uint32_t *dense, size_t dense_msk_stride,
+        int16_t *dense, size_t dense_msk_stride,size_t dense_data_stride,
         const uint32_t *bitslice, size_t bitslice_msk_stride, size_t bitslice_data_stride
         ) {
   start_bench(my_bs2dense);
@@ -391,7 +391,8 @@ void masked_bitslice2dense_opt(
       }
       transpose32(a);
       for (size_t i=0; i< 32; i++) {
-          dense[d*dense_msk_stride+i] = a[i];
+          dense[d*dense_msk_stride+i*dense_data_stride] = (a[i]>> 0)&((1<<16)-1);
+          dense[d*dense_msk_stride+(i+32)*dense_data_stride] = a[i]>> 16;
       }
   }
   stop_bench(my_bs2dense);
