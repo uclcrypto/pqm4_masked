@@ -73,7 +73,7 @@ void seccompress(size_t nshares, size_t ncoeffs, uint32_t q, uint32_t c,
                  const uint16_t *in, size_t in_msk_stride,
                  size_t in_data_stride);
 
-void masked_cbd(size_t nshares, size_t eta, size_t n_coeffs, size_t p,
+void masked_cbd(size_t nshares, size_t eta,
                 size_t kbits, uint16_t *z, size_t z_msk_stride,
                 size_t z_data_stride, uint32_t *a, size_t a_msk_stride,
                 size_t a_data_stride, uint32_t *b, size_t b_msk_stride,

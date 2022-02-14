@@ -1,5 +1,5 @@
-#ifndef NTT_PARAMS_H
-#define NTT_PARAMS_H
+#ifndef MNTT_PARAMS_H
+#define MNTT_PARAMS_H
 
 #define ARRAY_N 256
 
