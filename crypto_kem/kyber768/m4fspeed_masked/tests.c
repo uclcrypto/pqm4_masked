@@ -539,7 +539,7 @@ unsigned int test_seccompress() {
     coeffs_in1[i] = rand32() % q;
   }
 
-  seccompress(NSHARES, BSSIZE, q, c, out, 1, NSHARES, coeffs_in1, 1, NSHARES);
+  seccompress(NSHARES,  q, c, out, 1, NSHARES, coeffs_in1, 1, NSHARES);
 
   // convert all bitslice to dense
   masked_bitslice2dense(NSHARES, BSSIZE, kbits, coeffs_out, 1, NSHARES, out, 1,
@@ -588,7 +588,7 @@ unsigned int test_cbd() {
   int16_t a_dense[n_coeffs * nshares *2];
   int16_t b_dense[n_coeffs * nshares *2 ];
 
-  masked_cbd(nshares, eta, n_coeffs, p, kbits, z, 1, nshares, a, 1, nshares, b,
+  masked_cbd(nshares, eta, p, kbits, z, 1, nshares, a, 1, nshares, b,
              1, nshares);
 
   masked_bitslice2dense_opt(nshares, eta, a_dense, 1, nshares, a, 1,

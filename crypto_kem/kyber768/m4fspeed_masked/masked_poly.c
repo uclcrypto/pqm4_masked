@@ -131,7 +131,7 @@ void masked_poly_noise(StrAPoly r, const unsigned char *masked_seed,
 
       }
     }
-    masked_cbd(NSHARES, 2, BSSIZE, KYBER_Q, COEF_NBITS, out, 1, NSHARES, a, 1,
+    masked_cbd(NSHARES, 2,KYBER_Q, COEF_NBITS, out, 1, NSHARES, a, 1,
                NSHARES, b, 1, NSHARES);
 
     for (uint32_t n = 0; n < BSSIZE; n++) {
@@ -161,7 +161,7 @@ void masked_poly_tomsg(unsigned char *m, StrAPoly str_r) {
   StrAPoly2APoly(r, str_r);
   for (i = 0; i < KYBER_N; i += BSSIZE) {
 
-    seccompress(NSHARES, BSSIZE, KYBER_Q, 1, bits, 1, NSHARES, r[i], 1,
+    seccompress(NSHARES, KYBER_Q, 1, bits, 1, NSHARES, r[i], 1,
                 NSHARES);
 
     for (d = 0; d < NSHARES; d++) {
@@ -191,9 +191,9 @@ void masked_poly_cmp(size_t c, uint32_t *rc, const StrAPoly mp,
   for (i = 0; i < KYBER_N; i += BSSIZE*2) {
 
     // compress masked polynomial
-    seccompress(NSHARES, BSSIZE, KYBER_Q, c, bits, 1, NSHARES, r[i], 1,
+    seccompress(NSHARES,  KYBER_Q, c, bits, 1, NSHARES, r[i], 1,
                 NSHARES);
-    seccompress(NSHARES, BSSIZE, KYBER_Q, c, &bits[NSHARES*c], 1, NSHARES, r[i+BSSIZE], 1,
+    seccompress(NSHARES,  KYBER_Q, c, &bits[NSHARES*c], 1, NSHARES, r[i+BSSIZE], 1,
                 NSHARES);
 
     // map public polynomial to bitslice
