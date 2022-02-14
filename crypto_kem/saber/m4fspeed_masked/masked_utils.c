@@ -72,4 +72,5 @@ void unmasked_poly(Poly p, const StrAPoly mp, uint16_t modulus) {
       p[i] = (p[i] + mp[d][i]) % modulus;
     }
   }
+
 }

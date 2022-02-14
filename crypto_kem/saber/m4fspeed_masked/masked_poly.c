@@ -171,29 +171,26 @@ void masked_InnerProdDecNTT(uint8_t m[SABER_KEYBYTES], const uint8_t ciphertext[
     uint16_t cm[SABER_N];
     BS2POLT(ciphertext + SABER_POLYVECCOMPRESSEDBYTES, cm);
     for (size_t i = 0; i < SABER_N; i++) {
-        m_poly[0][i] = (m_poly[0][i] + h2 - (cm[i] << (SABER_EP - SABER_ET))) % SABER_P;
+        m_poly[0][i] = (SABER_P + m_poly[0][i] + h2 - (cm[i] << (SABER_EP - SABER_ET))) % SABER_P;
     }
 
-    Poly poly;
     for (size_t i = 0; i < SABER_N; i+=2*BSSIZE) {
-        uint32_t masked_bs[NSHARES][2*SABER_EP];
+        uint32_t masked_bs[NSHARES*SABER_EP*2];
         masked_dense2bitslice_opt(
                 NSHARES, SABER_EP,
-                masked_bs[0], 2*SABER_EP, 1,
+                masked_bs, 1, NSHARES,
                 &m_poly[0][i], SABER_N, 1
                 );
-        seca2b(NSHARES, SABER_EP, &masked_bs[0][0], 2*SABER_EP, 1);
-        seca2b(NSHARES, SABER_EP, &masked_bs[0][SABER_EP], 2*SABER_EP, 1);
+        seca2b(NSHARES, SABER_EP, masked_bs, 1, NSHARES);
+        seca2b(NSHARES, SABER_EP, &masked_bs[NSHARES*SABER_EP], 1, NSHARES);
         masked_bitslice2dense_opt(
                 NSHARES, 1,
                 &m_poly[0][i], SABER_N, 1,
-                &masked_bs[0][SABER_EP-1], 2*SABER_EP, SABER_EP
-                );
+                &masked_bs[(SABER_EP-1)*NSHARES], 1, NSHARES*SABER_EP);    
     }
-    unmasked_poly(poly, m_poly, SABER_P);
+    
+    Poly poly;
+    unmasked_poly(poly,m_poly,2);
+   
     POLmsg2BS(m, poly);
 }
-
-
-
-
