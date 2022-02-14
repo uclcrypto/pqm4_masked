@@ -449,7 +449,7 @@ void seca2b(size_t nshares, size_t kbits, uint32_t *in, size_t in_msk_stride,
   size_t nshares_high = nshares - nshares_low;
 
   seca2b(nshares_low, kbits, in, in_msk_stride, in_data_stride);
-  seca2b(nshares_high, kbits, &in[nshares_low], in_msk_stride, in_data_stride);
+  seca2b(nshares_high, kbits, &in[nshares_low*in_msk_stride], in_msk_stride, in_data_stride);
 
   uint32_t expanded_low[kbits * nshares];
   uint32_t expanded_high[kbits * nshares];
@@ -502,7 +502,7 @@ void seca2b_modp(size_t nshares, size_t kbits, uint32_t p, uint32_t *in,
   size_t nshares_high = nshares - nshares_low;
 
   seca2b_modp(nshares_low, kbits, p, in, in_msk_stride, in_data_stride);
-  seca2b_modp(nshares_high, kbits, p, &in[nshares_low], in_msk_stride,
+  seca2b_modp(nshares_high, kbits, p, &in[nshares_low*in_msk_stride], in_msk_stride,
               in_data_stride);
 
   uint32_t expanded_low[(kbits + 1) * nshares];
