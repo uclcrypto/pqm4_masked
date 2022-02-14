@@ -26,7 +26,7 @@ if __name__ == "__main__":
     k = "perf"
     benchs = ['my_cmp_finalize',"decaps","keccak",
             'my_masked_poly_cmp',"my_cbd","my_frommsg","my_tomsg","my_matacc","my_ntt"]
-    #benchs +=["my_dense2bs","my_bs2dense"]
+    benchs +=["my_dense2bs","my_bs2dense"]
     #benchs += ["my_secadd","my_seca2b"]
     
     df = pandas.read_csv("bench_masked_cycles.csv")

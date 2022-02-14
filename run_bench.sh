@@ -7,7 +7,7 @@ do
     echo "------------------------------"
     echo "BENCHMARK CYCLES $D SHARES"
     echo "------------------------------"
-    CFLAGS="-DNSHARES=$D -DBENCH=1 -DBENCH_RND=0" python3 benchmarks.py -p nucleo-l4r5zi --uart /dev/ttyACM0 kyber768/m4fspeed_masked --nostack --nospeed --nohashing --nosize -o speed 
+    CFLAGS="-DNSHARES=$D -DBENCH=1 -DBENCH_RND=0" python3 benchmarks.py -p nucleo-l4r5zi --uart /dev/ttyACM0 kyber768/m4fspeed_masked --subspeed -o speed 
 done
 
 echo "case,bench,shares,calls,perf" > bench_masked_cycles.csv
@@ -20,7 +20,7 @@ do
     echo "------------------------------"
     echo "BENCHMARK RANDOMNES $D SHARES"
     echo "------------------------------"
-    CFLAGS="-DNSHARES=$D -DBENCH=1 -DBENCH_RND=1" python3 benchmarks.py -p nucleo-l4r5zi --uart /dev/ttyACM0 kyber768/m4fspeed_masked --nostack --nospeed --nohashing --nosize -o speed 
+    CFLAGS="-DNSHARES=$D -DBENCH=1 -DBENCH_RND=1" python3 benchmarks.py -p nucleo-l4r5zi --uart /dev/ttyACM0 kyber768/m4fspeed_masked --subspeed -o speed 
 done
 
 echo "case,bench,shares,calls,perf" > bench_masked_rnd.csv
