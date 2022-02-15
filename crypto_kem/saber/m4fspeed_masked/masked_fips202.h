@@ -60,5 +60,4 @@ void masked_shake128_squeeze(
         uint8_t *output, size_t outlen, size_t out_msk_stride, size_t out_data_stride
         );
 
-
 #endif

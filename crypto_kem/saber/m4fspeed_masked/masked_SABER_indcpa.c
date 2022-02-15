@@ -23,10 +23,7 @@ uint8_t masked_indcpa_kem_enc_cmp(const uint8_t m[SABER_KEYBYTES], const uint8_t
     const uint8_t *ct0 = ciphertext;
     const uint8_t *ct1 = ciphertext + SABER_POLYVECCOMPRESSEDBYTES;
 
-    fail |= masked_MatrixVectorMulEncNTT((uint8_t*)ct0, (uint8_t*)ct1, seed_s, seed_A, pk, m, 1);
-    fail = (~fail + 1);
-    fail >>= 31;
-
+    fail = masked_MatrixVectorMulEncNTT((uint8_t*)ct0, (uint8_t*)ct1, seed_s, seed_A, pk, m, 1);
     return (uint8_t)fail;
 }
 
