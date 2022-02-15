@@ -566,7 +566,7 @@ void masked_cbd(size_t nshares, size_t eta,
   start_bench(my_cbd);
   size_t np = 2 * eta;
   size_t i, d, k, j, s;
-  uint32_t sp[nshares * np], z_str_full[nshares * COEF_NBITS *2];
+  uint32_t sp[nshares * np], z_str_full[nshares * kbits *2];
   uint32_t *a_in,*b_in,*z_str;
 
   //  k = ceil(log2(2*eta +1))
@@ -583,7 +583,7 @@ void masked_cbd(size_t nshares, size_t eta,
     // copy input puts
     a_in = &a[s*(eta)*a_data_stride];
     b_in = &b[s*(eta)*b_data_stride];
-    z_str = &z_str_full[s*nshares * COEF_NBITS];
+    z_str = &z_str_full[s*nshares * kbits];
 
     // compute HW(a) - HW(b) for current 32-bit slices
     for (i = 0; i < eta; i++) {
@@ -614,7 +614,7 @@ void masked_cbd(size_t nshares, size_t eta,
       np /= 2;
     }
 
-    for (i = k; i < COEF_NBITS; i++) {
+    for (i = k; i < kbits; i++) {
       for (d = 0; d < nshares; d++) {
         z_str[i * nshares + d] = 0;
       }

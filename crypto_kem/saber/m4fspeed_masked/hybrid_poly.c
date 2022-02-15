@@ -15,6 +15,7 @@
 #define h2 ((1 << (SABER_EP - 2)) - (1 << (SABER_EP - SABER_ET - 1)) + (1 << (SABER_EQ - SABER_EP - 1)))
 #define MAX(a,b) (((a)>(b))?(a):(b))
 
+#define MY_DEBUG
 extern void __asm_poly_add_16(uint16_t *des, uint16_t *src1, uint16_t *src2);
 extern void __asm_poly_add_32(uint32_t *des, uint32_t *src1, uint32_t *src2);
 
@@ -41,6 +42,7 @@ uint32_t masked_MatrixVectorMulEncNTT(uint8_t ct0[SABER_POLYVECCOMPRESSEDBYTES],
     uint32_t s_NTT[SABER_L * SABER_N];
 
     uint16_t poly[SABER_N];
+    uint16_t poly_ref[SABER_N];
     uint16_t masked_poly[NSHARES*SABER_N];
     uint16_t acc[SABER_N];
 
@@ -63,9 +65,21 @@ uint32_t masked_MatrixVectorMulEncNTT(uint8_t ct0[SABER_POLYVECCOMPRESSEDBYTES],
         masked_cbd_seed(NSHARES,
                     masked_poly,SABER_N,1,
                     masked_shake_out,SABER_POLYCOINBYTES,1);
+        
+        cbd(poly_ref,shake_out);
 
         unmasked_poly(poly,masked_poly,SABER_Q);
-        NTT_forward_32(s_NTT + i * SABER_N, poly);
+
+#ifdef MY_DEBUG
+        char buf_x [128];
+        hal_send_str("----------");
+        for(int n = 0; n<SABER_N;n++){
+          sprintf(buf_x,"n%d- > %d %d",n,(uint16_t) poly[n],(uint16_t) poly_ref[n]%SABER_Q);
+          hal_send_str(buf_x);
+        }
+#endif
+
+        NTT_forward_32(s_NTT + i * SABER_N, poly_ref);
     }
 
     shake128_inc_ctx_release(&shake_s_ctx);

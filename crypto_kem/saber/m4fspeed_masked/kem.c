@@ -60,7 +60,7 @@ int crypto_kem_dec(uint8_t *k, const uint8_t *c, const uint8_t *sk)
     sha3_512(kr, buf, 64);
 
     // Compare with re-encrypted -> TODO mask
-    fail = indcpa_kem_enc_cmp(buf, kr + 32, pk, c); //in-place verification of the re-encryption
+    fail = masked_indcpa_kem_enc_cmp(buf, kr + 32, pk, c); //in-place verification of the re-encryption
 
     // Not masked: H(c)
     sha3_256(kr + 32, c, SABER_BYTES_CCA_DEC); // overwrite coins in kr with h(c)

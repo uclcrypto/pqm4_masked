@@ -60,8 +60,8 @@ void masked_cbd_seed(
 
     for(int n=0;n<32;n+=1){
       for(int d=0;d<NSHARES;d++){
-        s[d*s_msk_stride + n*s_data_stride] = cbd[d + n*NSHARES];
-        s[d*s_msk_stride + (n+32)*s_data_stride] = cbd[d + (n+32)*NSHARES];
+        s[d*s_msk_stride + (j+n)*s_data_stride] = cbd[d + n*NSHARES];
+        s[d*s_msk_stride + (j+n+32)*s_data_stride] = cbd[d + (n+32)*NSHARES];
       }
     }
   }
