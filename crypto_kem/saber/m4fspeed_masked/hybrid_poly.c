@@ -15,7 +15,7 @@
 #define h2 ((1 << (SABER_EP - 2)) - (1 << (SABER_EP - SABER_ET - 1)) + (1 << (SABER_EQ - SABER_EP - 1)))
 #define MAX(a,b) (((a)>(b))?(a):(b))
 
-#define MY_DEBUG
+//#define MY_DEBUG
 extern void __asm_poly_add_16(uint16_t *des, uint16_t *src1, uint16_t *src2);
 extern void __asm_poly_add_32(uint32_t *des, uint32_t *src1, uint32_t *src2);
 
@@ -43,8 +43,10 @@ uint32_t masked_MatrixVectorMulEncNTT(uint8_t ct0[SABER_POLYVECCOMPRESSEDBYTES],
 
     uint16_t poly[SABER_N];
     uint16_t poly_ref[SABER_N];
-    uint16_t masked_poly[NSHARES*SABER_N];
+    uint16_t m_poly[NSHARES*SABER_N];
     uint16_t acc[SABER_N];
+    uint16_t myref[SABER_N];
+    uint16_t masked_acc[NSHARES*SABER_N];
 
     uint8_t shake_out[MAX(SABER_POLYBYTES, SABER_POLYCOINBYTES)];
     uint8_t masked_shake_out[MAX(SABER_POLYBYTES, SABER_POLYCOINBYTES)*NSHARES];
@@ -63,12 +65,12 @@ uint32_t masked_MatrixVectorMulEncNTT(uint8_t ct0[SABER_POLYVECCOMPRESSEDBYTES],
           masked_shake_out[0*SABER_POLYCOINBYTES + j] = shake_out[j]; 
         
         masked_cbd_seed(NSHARES,
-                    masked_poly,SABER_N,1,
+                    m_poly,SABER_N,1,
                     masked_shake_out,SABER_POLYCOINBYTES,1);
         
         cbd(poly_ref,shake_out);
 
-        unmasked_poly(poly,masked_poly,SABER_Q);
+        unmasked_poly(poly,m_poly,SABER_Q);
 
 #ifdef MY_DEBUG
         char buf_x [128];
@@ -78,7 +80,6 @@ uint32_t masked_MatrixVectorMulEncNTT(uint8_t ct0[SABER_POLYVECCOMPRESSEDBYTES],
           hal_send_str(buf_x);
         }
 #endif
-
         NTT_forward_32(s_NTT + i * SABER_N, poly_ref);
     }
 
@@ -86,13 +87,17 @@ uint32_t masked_MatrixVectorMulEncNTT(uint8_t ct0[SABER_POLYVECCOMPRESSEDBYTES],
 
     shake128incctx shake_A_ctx = shake128_absorb_seed(seed_A);
 
+    uint32_t rc[NSHARES];
+    memset(rc,0,sizeof(rc));
+    rc[0] = 0xFFFFFFFF;
+
     for (i = 0; i < SABER_L; i++) {
 
         for (j = 0; j < SABER_L; j++) {
 
             shake128_inc_squeeze(shake_out, SABER_POLYBYTES, &shake_A_ctx);
             BS2POLq(shake_out, poly);
-
+            
             NTT_forward_32(A_NTT, poly);
 
             if (j == 0) {
@@ -106,11 +111,20 @@ uint32_t masked_MatrixVectorMulEncNTT(uint8_t ct0[SABER_POLYVECCOMPRESSEDBYTES],
         NTT_inv_32(acc, acc_NTT);
 
         for (j = 0; j < SABER_N; j++) {
-            acc[j] = ((acc[j] + h1) >> (SABER_EQ - SABER_EP));
+            acc[j] = (acc[j] + h1);
+        }
+        masked_poly(masked_acc,acc,SABER_Q);
+        for (j = 0; j < SABER_N; j++) {
+            acc[j] = ((acc[j]) >> (SABER_EQ - SABER_EP));
         }
 
+        
         if (compare) {
-            fail |= POLp2BS_cmp(ct0 + i * SABER_POLYCOMPRESSEDBYTES, acc);
+            BS2POLp(ct0 + i*SABER_POLYCOMPRESSEDBYTES,myref);
+            for(j=0;j<SABER_N;j++){
+              myref[j] = myref[j] % SABER_P;
+            }
+            masked_poly_cmp(SABER_EQ-SABER_EP,SABER_EQ,SABER_EQ,rc,masked_acc,myref);
         } else {
             POLp2BS(ct0 + i * SABER_POLYCOMPRESSEDBYTES, acc);
         }
@@ -137,15 +151,30 @@ uint32_t masked_MatrixVectorMulEncNTT(uint8_t ct0[SABER_POLYVECCOMPRESSEDBYTES],
     BS2POLmsg(m, mp);
 
     for(j = 0; j < SABER_N; j++){
-        acc[j] = (acc[j] - (mp[j] << (SABER_EP - 1)) + h1) >> (SABER_EP - SABER_ET);
+        acc[j] = (acc[j] - (mp[j] << (SABER_EP - 1)) + h1);
     }
 
+    masked_poly(masked_acc,acc,SABER_P);
+    for(j = 0; j < SABER_N; j++){
+        acc[j] = (acc[j]) >> (SABER_EP - SABER_ET);
+    }
+ 
     if(compare){
         fail |= POLT2BS_cmp(ct1, acc);
+        BS2POLT(ct1,myref);
+        for(j=0;j<SABER_N;j++){
+            myref[j] = myref[j] % (1<<SABER_ET);
+        }           
+        masked_poly_cmp(SABER_EP-SABER_ET,SABER_EP,SABER_EP,rc,masked_acc,myref);
     }else{
         POLT2BS(ct1, acc);
     }
-
-    return fail;
+    
+    finalize_cmp(rc);
+    fail = 0;
+    for(int d=0;d<NSHARES;d++){
+      fail ^= rc[d];
+    }
+    return ~fail;
 
 }

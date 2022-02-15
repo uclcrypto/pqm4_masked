@@ -91,3 +91,66 @@ void masked_InnerProdDecNTT(uint8_t m[SABER_KEYBYTES], const uint8_t ciphertext[
    
     POLmsg2BS(m, poly);
 }
+
+void masked_poly_cmp(size_t b_start, size_t b_end, size_t coeffs_size, uint32_t *rc, const uint16_t *mp,
+                     int16_t *ref) {
+
+  size_t i, b;
+  uint32_t bits[2* NSHARES * coeffs_size];
+  uint32_t bits_ref[2*coeffs_size];
+
+  for (i = 0; i < SABER_N; i += BSSIZE*2) {
+
+    // convert masked poly
+    masked_dense2bitslice_opt(NSHARES,coeffs_size,
+        bits,1,NSHARES,
+        mp,SABER_N,1);
+
+    seca2b(NSHARES,  coeffs_size, bits, 1, NSHARES);
+    seca2b(NSHARES,  coeffs_size, &bits[NSHARES*coeffs_size], 1, NSHARES);
+
+    // map public polynomial to bitslice
+    masked_dense2bitslice_opt(1, coeffs_size, bits_ref, 1, 1, ref, 1,
+                          1);
+
+    for (b = 0; b < b_end-b_start; b++){
+
+      // public polynomial and public one
+      bits[(b+b_start) * NSHARES] ^= bits_ref[b] ^ 0xFFFFFFFF;
+      masked_and(NSHARES, rc, 1, rc, 1, &bits[(b+b_start) * NSHARES], 1);
+
+      bits[(b+b_start+coeffs_size) * NSHARES] ^= bits_ref[b+coeffs_size] ^ 0xFFFFFFFF;
+      masked_and(NSHARES, rc, 1, rc, 1, &bits[(b+b_start+coeffs_size) * NSHARES], 1);
+    }
+  }
+}
+void finalize_cmp(uint32_t *bits) {
+
+  uint32_t other[NSHARES];
+  int d;
+  for (d = 0; d < NSHARES; d++) {
+    other[d] = bits[d] >> 16;
+  }
+  masked_and(NSHARES, bits, 1, bits, 1, other, 1);
+
+  for (d = 0; d < NSHARES; d++) {
+    other[d] = bits[d] >> 8;
+  }
+  masked_and(NSHARES, bits, 1, bits, 1, other, 1);
+
+  for (d = 0; d < NSHARES; d++) {
+    other[d] = bits[d] >> 4;
+  }
+  masked_and(NSHARES, bits, 1, bits, 1, other, 1);
+
+  for (d = 0; d < NSHARES; d++) {
+    other[d] = bits[d] >> 2;
+  }
+  masked_and(NSHARES, bits, 1, bits, 1, other, 1);
+  for (d = 0; d < NSHARES; d++) {
+    other[d] = bits[d] >> 1;
+  }
+  masked_and(NSHARES, bits, 1, bits, 1, other, 1);
+}
+
+
