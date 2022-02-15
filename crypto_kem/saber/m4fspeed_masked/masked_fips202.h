@@ -20,6 +20,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#define KECCAK_NWORDS 25
+
 void masked_shake128(uint8_t *output, size_t outlen, size_t out_msk_stride,
                      size_t out_data_stride, const uint8_t *input, size_t inlen,
                      size_t in_msk_stride, size_t in_data_stride);
@@ -36,6 +38,11 @@ void masked_sha3_512(uint8_t *output, size_t out_msk_stride,
                      size_t out_data_stride, const uint8_t *input, size_t inlen,
                      size_t in_msk_stride, size_t in_data_stride);
 
+typedef union {
+  uint64_t w[NSHARES][KECCAK_NWORDS];
+  uint32_t h[NSHARES][2 * KECCAK_NWORDS];
+} MaskedKeccakState;
+
 // incremental shake128
 typedef struct {
     MaskedKeccakState state;
@@ -45,7 +52,7 @@ typedef struct {
 void masked_shake128_inc_init(
         MaskedShakeCtx *ctx,
         const uint8_t *in, size_t inlen,
-        size_t in_msk_stride, size_t in_data_stride,
+        size_t in_msk_stride, size_t in_data_stride
         );
 
 void masked_shake128_squeeze(
