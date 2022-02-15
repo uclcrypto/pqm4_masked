@@ -29,13 +29,7 @@
 
 #define NROUNDS 24
 #define ROL(a, offset) ((a << offset) ^ (a >> (64 - offset)))
-#define KECCAK_NWORDS 25
 #define Plen 200
-
-typedef union {
-  uint64_t w[NSHARES][KECCAK_NWORDS];
-  uint32_t h[NSHARES][2 * KECCAK_NWORDS];
-} MaskedKeccakState;
 
 /******** The Keccak-f[1600] permutation ********/
 
@@ -279,8 +273,8 @@ static void masked_shake_inc_init(
         ) {
   start_bench(keccak);
   ctx->rem_bytes = 0;
-  memset(ctx->state.w[0][0], 0, sizeof(MaskedKeccakState));
-  uint64_t *msk_a = ctx->state.w[0][0];
+  memset(&ctx->state.w[0][0], 0, sizeof(MaskedKeccakState));
+  uint64_t *msk_a = &ctx->state.w[0][0];
   // Absorb input.
   while (inlen >= rate) {
     for (size_t i = 0; i < rate; i++) {
@@ -349,7 +343,7 @@ static void masked_shake_squeeze(
 void masked_shake128_inc_init(
         MaskedShakeCtx *ctx,
         const uint8_t *in, size_t inlen,
-        size_t in_msk_stride, size_t in_data_stride,
+        size_t in_msk_stride, size_t in_data_stride
         ) {
     masked_shake_inc_init(
             ctx, in, inlen, in_msk_stride, in_data_stride, 200-128/4, 0x1f
@@ -370,5 +364,5 @@ void masked_shake128_squeeze(
         MaskedShakeCtx *ctx,
         uint8_t *output, size_t outlen, size_t out_msk_stride, size_t out_data_stride
         ) {
-    masked_shake_squeeze(output, outlen, out_msk_stride, out_data_stride, 200-128/4);
+    masked_shake_squeeze(ctx, output, outlen, out_msk_stride, out_data_stride, 200-128/4);
 }
