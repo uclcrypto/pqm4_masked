@@ -50,6 +50,7 @@ int crypto_kem_dec(uint8_t *k, const uint8_t *c, const uint8_t *sk)
     uint8_t masked_buf[64*NSHARES];
 
     uint8_t kr[64]; // Will contain key, coins
+    uint8_t masked_kr[64*NSHARES]; // Will contain key, coins
     const uint8_t *pk = sk + SABER_INDCPA_SECRETKEYBYTES;
     const uint8_t *hpk = sk + SABER_SECRETKEYBYTES - 64; // Save hash by storing h(pk) in sk
     StrAPolyVec masked_sk;
@@ -72,16 +73,17 @@ int crypto_kem_dec(uint8_t *k, const uint8_t *c, const uint8_t *sk)
         buf[i] ^= masked_buf[d*64 + i];
       }
     }
-
+    
     // Copy decrypted -> TODO mask
     memcpy(buf + 32, hpk, 32);  // Multitarget countermeasure for coins + contributory KEM
 
     // Hash decrypted to get coins -> TODO mask
     memcpy(buf + 32, hpk, 32);  // Multitarget countermeasure for coins + contributory KEM
     sha3_512(kr, buf, 64);
-
+    memset(masked_kr,0, sizeof(masked_kr));
+    memcpy(masked_kr,kr,sizeof(kr));
     // Compare with re-encrypted -> TODO mask
-    fail = masked_indcpa_kem_enc_cmp(masked_buf,64,1, kr + 32, pk, c); //in-place verification of the re-encryption
+    fail = masked_indcpa_kem_enc_cmp(masked_buf,64,1, &masked_kr[32],64,1, pk, c); //in-place verification of the re-encryption
 
     // Not masked: H(c)
     sha3_256(kr + 32, c, SABER_BYTES_CCA_DEC); // overwrite coins in kr with h(c)

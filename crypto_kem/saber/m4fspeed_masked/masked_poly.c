@@ -100,7 +100,7 @@ void masked_InnerProdDecNTT(uint8_t *m, size_t m_msk_stide, size_t m_data_stride
 
 uint32_t masked_MatrixVectorMulEncNTT_cmp(uint8_t ct0[SABER_POLYVECCOMPRESSEDBYTES], 
                 uint8_t ct1[SABER_SCALEBYTES_KEM], 
-                const uint8_t seed_s[SABER_NOISE_SEEDBYTES*NSHARES], 
+                const uint8_t *seed_s, size_t seed_s_msk_stride, size_t seed_s_data_stride, 
                 const uint8_t seed_A[SABER_SEEDBYTES], 
                 const uint8_t pk[SABER_INDCPA_PUBLICKEYBYTES], 
                 uint8_t *m, size_t m_msk_stide, size_t m_data_stride){
@@ -128,13 +128,9 @@ uint32_t masked_MatrixVectorMulEncNTT_cmp(uint8_t ct0[SABER_POLYVECCOMPRESSEDBYT
     size_t i, j,d;
     uint32_t fail = 0;
 
-    uint8_t masked_seed_s[NSHARES*SABER_SEEDBYTES];
-    memset(masked_seed_s,0,sizeof(masked_seed_s));
-    memcpy(masked_seed_s,seed_s,SABER_SEEDBYTES);
-
     MaskedShakeCtx masked_shake_s_ctx;
     masked_shake128_inc_init(&masked_shake_s_ctx,
-        masked_seed_s,SABER_SEEDBYTES,SABER_SEEDBYTES,1);
+        seed_s,SABER_SEEDBYTES,seed_s_msk_stride,seed_s_data_stride);
 
     for(i = 0; i < SABER_L; i++){
         masked_shake128_squeeze(&masked_shake_s_ctx,
@@ -144,14 +140,6 @@ uint32_t masked_MatrixVectorMulEncNTT_cmp(uint8_t ct0[SABER_POLYVECCOMPRESSEDBYT
                     m_poly,SABER_N,1,
                     masked_shake_out,SABER_POLYCOINBYTES,1);
         
-#ifdef MY_DEBUG
-        char buf_x [128];
-        hal_send_str("----------");
-        for(int n = 0; n<SABER_N;n++){
-          sprintf(buf_x,"n%d- > %d %d",n,(uint16_t) poly[n],(uint16_t) poly_ref[n]%SABER_Q);
-          hal_send_str(buf_x);
-        }
-#endif
         for(int d = 0; d<NSHARES; d++){
           NTT_forward_32(s_NTT_32[d] + i * SABER_N, m_poly[d]);
           NTT_forward_16(s_NTT_16[d] + i * SABER_N, m_poly[d]);
