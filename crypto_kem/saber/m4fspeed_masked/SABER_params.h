@@ -7,19 +7,20 @@
 // #define SABER_L 4 /* FireSaber */
 
 /* Store the secret key as 4-bit value in [-mu/2, mu/2]
-    Not compatible with testvectors that check the secret key for its reference value. */
+    Not compatible with testvectors that check the secret key for its reference
+   value. */
 // #define SABER_COMPRESS_SECRETKEY
 
 /* Don't change anything below this line */
 #if SABER_L == 2
-    #define SABER_MU 10
-    #define SABER_ET 3
+#define SABER_MU 10
+#define SABER_ET 3
 #elif SABER_L == 3
-    #define SABER_MU 8
-    #define SABER_ET 4
+#define SABER_MU 8
+#define SABER_ET 4
 #elif SABER_L == 4
-    #define SABER_MU 6
-    #define SABER_ET 6
+#define SABER_MU 6
+#define SABER_ET 6
 #endif
 
 #define SABER_EQ 13
@@ -44,18 +45,24 @@
 
 #define SABER_SCALEBYTES_KEM (SABER_ET * SABER_N / 8)
 
-#define SABER_INDCPA_PUBLICKEYBYTES (SABER_POLYVECCOMPRESSEDBYTES + SABER_SEEDBYTES)
+#define SABER_INDCPA_PUBLICKEYBYTES                                            \
+  (SABER_POLYVECCOMPRESSEDBYTES + SABER_SEEDBYTES)
 
 #ifdef SABER_COMPRESS_SECRETKEY
-    #define SABER_POLYSECRETBYTES (4 * SABER_N / 8)  // secret key is stored as 4-bit value in [-mu/2, mu/2]
+#define SABER_POLYSECRETBYTES                                                  \
+  (4 * SABER_N / 8) // secret key is stored as 4-bit value in [-mu/2, mu/2]
 #else
-    #define SABER_POLYSECRETBYTES SABER_POLYBYTES // secret key is stored as q-bit value
+#define SABER_POLYSECRETBYTES                                                  \
+  SABER_POLYBYTES // secret key is stored as q-bit value
 #endif
 
 #define SABER_INDCPA_SECRETKEYBYTES (SABER_L * SABER_POLYSECRETBYTES)
 #define SABER_PUBLICKEYBYTES (SABER_INDCPA_PUBLICKEYBYTES)
-#define SABER_SECRETKEYBYTES (SABER_INDCPA_SECRETKEYBYTES + SABER_INDCPA_PUBLICKEYBYTES + SABER_HASHBYTES + SABER_KEYBYTES)
+#define SABER_SECRETKEYBYTES                                                   \
+  (SABER_INDCPA_SECRETKEYBYTES + SABER_INDCPA_PUBLICKEYBYTES +                 \
+   SABER_HASHBYTES + SABER_KEYBYTES)
 
-#define SABER_BYTES_CCA_DEC (SABER_POLYVECCOMPRESSEDBYTES + SABER_SCALEBYTES_KEM)
+#define SABER_BYTES_CCA_DEC                                                    \
+  (SABER_POLYVECCOMPRESSEDBYTES + SABER_SCALEBYTES_KEM)
 
 #endif

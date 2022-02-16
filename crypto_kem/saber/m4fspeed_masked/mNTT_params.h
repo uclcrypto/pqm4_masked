@@ -19,7 +19,6 @@
 // invNQ1 = NTT_N^{-1} mod Q1
 #define invNQ1 43985215
 
-
 #define Q2 769
 #define Q2pr 11
 // omegaQ2 = Q2pr^((Q2 - 1) / (NTT_N << 1)) mod Q2
@@ -40,6 +39,3 @@
 #define Q2bar 5585133
 
 #endif
-
-
-

@@ -45,19 +45,16 @@ typedef union {
 
 // incremental shake128
 typedef struct {
-    MaskedKeccakState state;
-    uint8_t rem_bytes;
+  MaskedKeccakState state;
+  uint8_t rem_bytes;
 } MaskedShakeCtx;
 
-void masked_shake128_inc_init(
-        MaskedShakeCtx *ctx,
-        const uint8_t *in, size_t inlen,
-        size_t in_msk_stride, size_t in_data_stride
-        );
+void masked_shake128_inc_init(MaskedShakeCtx *ctx, const uint8_t *in,
+                              size_t inlen, size_t in_msk_stride,
+                              size_t in_data_stride);
 
-void masked_shake128_squeeze(
-        MaskedShakeCtx *ctx,
-        uint8_t *output, size_t outlen, size_t out_msk_stride, size_t out_data_stride
-        );
+void masked_shake128_squeeze(MaskedShakeCtx *ctx, uint8_t *output,
+                             size_t outlen, size_t out_msk_stride,
+                             size_t out_data_stride);
 
 #endif

@@ -16,19 +16,19 @@
  */
 #ifndef MASKED_UTILS_H
 #define MASKED_UTILS_H
-#include "masked.h"
 #include "SABER_params.h"
+#include "masked.h"
 #include <libopencm3/stm32/rng.h>
 #include <stdint.h>
 
-#if BENCH_RND==1
+#if BENCH_RND == 1
 extern uint64_t rng_cnt;
 #endif
 
 inline uint32_t get_random() {
-#if BENCH_RND==1
-  rng_cnt+=1;
-#endif 
+#if BENCH_RND == 1
+  rng_cnt += 1;
+#endif
   while (1) {
     if ((RNG_SR & RNG_SR_DRDY) == 1) { // check if data is ready
       return RNG_DR;

@@ -33,12 +33,12 @@
 typedef uint32_t BsBBit[NSHARES];   // dense
 typedef BsBBit BsBCoef[COEF_NBITS]; // dense
 typedef uint16_t Coef;
-typedef Coef Poly[SABER_N] __attribute__ ((aligned(4)));
-typedef Coef ACoef[NSHARES];             // dense
-typedef Coef APoly[SABER_N][NSHARES] __attribute__ ((aligned(4)));    // dense
-typedef APoly APolyVec[SABER_L];         // dense
-typedef Coef StrAPoly[NSHARES][SABER_N] __attribute__ ((aligned(4))); // strided
-typedef StrAPoly StrAPolyVec[SABER_L];   // strided
+typedef Coef Poly[SABER_N] __attribute__((aligned(4)));
+typedef Coef ACoef[NSHARES];                                         // dense
+typedef Coef APoly[SABER_N][NSHARES] __attribute__((aligned(4)));    // dense
+typedef APoly APolyVec[SABER_L];                                     // dense
+typedef Coef StrAPoly[NSHARES][SABER_N] __attribute__((aligned(4))); // strided
+typedef StrAPoly StrAPolyVec[SABER_L];                               // strided
 
 #include "hal.h"
 #include <stdio.h>

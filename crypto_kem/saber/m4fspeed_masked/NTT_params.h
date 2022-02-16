@@ -36,14 +36,12 @@
 // invNQ2 = NTT_N^{-1} mod Q2
 #define invNQ2 3277
 
-
 // Q1inv = Q1^{-1} mod^{+-} Q2
 #define Q1inv 1370
 // Q1invRmod = 2^16 Q1^{-1} mod^{+-} Q2
 #define Q1invRmod 1190
 // Q1Q1invRmod = Q1 || Q1invRmod
 #define Q1Q1invRmod 503383206
-
 
 // Q1Q2 = Q1 * Q2
 #define Q1Q2 25570049

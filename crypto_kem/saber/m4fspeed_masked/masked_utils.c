@@ -15,8 +15,8 @@
  * pqm4_masked. If not, see <https://www.gnu.org/licenses/>.
  */
 #include "masked_utils.h"
-#include "masked.h"
 #include "SABER_params.h"
+#include "masked.h"
 #include <libopencm3/stm32/rng.h>
 
 extern inline uint32_t get_random();
@@ -72,5 +72,4 @@ void unmasked_poly(Poly p, const StrAPoly mp, uint16_t modulus) {
       p[i] = (p[i] + mp[d][i]) % modulus;
     }
   }
-
 }

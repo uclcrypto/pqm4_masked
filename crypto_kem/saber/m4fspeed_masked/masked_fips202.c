@@ -72,7 +72,6 @@ static const uint64_t RC[24] = {1ULL,
   v = 0;                                                                       \
   REPEAT5(e; v += s;)
 
-
 void masked_keccak(MaskedKeccakState *state) {
   uint8_t x, y;
   for (int i = 0; i < NROUNDS; i++) {
@@ -201,7 +200,7 @@ void masked_shake128(uint8_t *output, size_t outlen, size_t out_msk_stride,
                      size_t out_data_stride, const uint8_t *input, size_t inlen,
                      size_t in_msk_stride, size_t in_data_stride) {
   masked_hash_keccak(output, outlen, out_msk_stride, out_data_stride, input,
-                     inlen, in_msk_stride, in_data_stride, 200-128/4, 0x1f);
+                     inlen, in_msk_stride, in_data_stride, 200 - 128 / 4, 0x1f);
 }
 
 /*************************************************
@@ -222,7 +221,7 @@ void masked_shake256(uint8_t *output, size_t outlen, size_t out_msk_stride,
                      size_t out_data_stride, const uint8_t *input, size_t inlen,
                      size_t in_msk_stride, size_t in_data_stride) {
   masked_hash_keccak(output, outlen, out_msk_stride, out_data_stride, input,
-                     inlen, in_msk_stride, in_data_stride, 200-256, 0x1f);
+                     inlen, in_msk_stride, in_data_stride, 200 - 256, 0x1f);
 }
 
 /*************************************************
@@ -242,7 +241,7 @@ void masked_sha3_512(uint8_t *output, size_t out_msk_stride,
                      size_t out_data_stride, const uint8_t *input, size_t inlen,
                      size_t in_msk_stride, size_t in_data_stride) {
   masked_hash_keccak(output, 64, out_msk_stride, out_data_stride, input, inlen,
-                     in_msk_stride, in_data_stride, 200-512/4, 0x06);
+                     in_msk_stride, in_data_stride, 200 - 512 / 4, 0x06);
 }
 
 /*************************************************
@@ -262,15 +261,13 @@ void masked_sha3_256(uint8_t *output, size_t out_msk_stride,
                      size_t out_data_stride, const uint8_t *input, size_t inlen,
                      size_t in_msk_stride, size_t in_data_stride) {
   masked_hash_keccak(output, 64, out_msk_stride, out_data_stride, input, inlen,
-                     in_msk_stride, in_data_stride, 200-256/4, 0x06);
+                     in_msk_stride, in_data_stride, 200 - 256 / 4, 0x06);
 }
 
-static void masked_shake_inc_init(
-        MaskedShakeCtx *ctx,
-        const uint8_t *in, size_t inlen,
-        size_t in_msk_stride, size_t in_data_stride,
-        size_t rate, uint8_t delim
-        ) {
+static void masked_shake_inc_init(MaskedShakeCtx *ctx, const uint8_t *in,
+                                  size_t inlen, size_t in_msk_stride,
+                                  size_t in_data_stride, size_t rate,
+                                  uint8_t delim) {
   start_bench(keccak);
   ctx->rem_bytes = 0;
   memset(&ctx->state.w[0][0], 0, sizeof(MaskedKeccakState));
@@ -298,20 +295,18 @@ static void masked_shake_inc_init(
 }
 
 #define MIN(X, Y) (((X) < (Y)) ? (X) : (Y))
-static void masked_shake_squeeze(
-        MaskedShakeCtx *ctx,
-        uint8_t *out, size_t outlen, size_t out_msk_stride, size_t out_data_stride,
-        size_t rate
-        ) {
+static void masked_shake_squeeze(MaskedShakeCtx *ctx, uint8_t *out,
+                                 size_t outlen, size_t out_msk_stride,
+                                 size_t out_data_stride, size_t rate) {
 
   uint64_t *msk_a = &ctx->state.w[0][0];
   // First absorb what's left.
   size_t len = MIN(outlen, ctx->rem_bytes);
   for (size_t i = 0; i < len; i++) {
-      for (size_t j = 0; j < NSHARES; j++) {
-          out[i * out_data_stride + j * out_msk_stride] =
-              ExtractU64(msk_a, (rate - ctx->rem_bytes) + i + j * Plen);
-      }
+    for (size_t j = 0; j < NSHARES; j++) {
+      out[i * out_data_stride + j * out_msk_stride] =
+          ExtractU64(msk_a, (rate - ctx->rem_bytes) + i + j * Plen);
+    }
   }
   out += len * out_data_stride;
   outlen -= len;
@@ -320,14 +315,14 @@ static void masked_shake_squeeze(
     masked_keccak(&ctx->state);
     len = MIN(rate, outlen);
     for (size_t i = 0; i < len; i++) {
-        for (size_t j = 0; j < NSHARES; j++) {
-            out[i * out_data_stride + j * out_msk_stride] =
-                ExtractU64(msk_a, i + j * Plen);
-        }
+      for (size_t j = 0; j < NSHARES; j++) {
+        out[i * out_data_stride + j * out_msk_stride] =
+            ExtractU64(msk_a, i + j * Plen);
+      }
     }
     out += len * out_data_stride;
     outlen -= len;
-    ctx->rem_bytes = rate-len;
+    ctx->rem_bytes = rate - len;
   }
 }
 
@@ -341,14 +336,11 @@ static void masked_shake_squeeze(
  *              - size_t in_msk_stride: stride of input shares.
  *              - size_t in_data_stride: stride of input data bytes.
  **************************************************/
-void masked_shake128_inc_init(
-        MaskedShakeCtx *ctx,
-        const uint8_t *in, size_t inlen,
-        size_t in_msk_stride, size_t in_data_stride
-        ) {
-    masked_shake_inc_init(
-            ctx, in, inlen, in_msk_stride, in_data_stride, 200-128/4, 0x1f
-            );
+void masked_shake128_inc_init(MaskedShakeCtx *ctx, const uint8_t *in,
+                              size_t inlen, size_t in_msk_stride,
+                              size_t in_data_stride) {
+  masked_shake_inc_init(ctx, in, inlen, in_msk_stride, in_data_stride,
+                        200 - 128 / 4, 0x1f);
 }
 
 /*************************************************
@@ -361,9 +353,9 @@ void masked_shake128_inc_init(
  *              - size_t out_msk_stride: stride of output shares.
  *              - size_t out_data_stride: stride of output data bytes.
  **************************************************/
-void masked_shake128_squeeze(
-        MaskedShakeCtx *ctx,
-        uint8_t *output, size_t outlen, size_t out_msk_stride, size_t out_data_stride
-        ) {
-    masked_shake_squeeze(ctx, output, outlen, out_msk_stride, out_data_stride, 200-128/4);
+void masked_shake128_squeeze(MaskedShakeCtx *ctx, uint8_t *output,
+                             size_t outlen, size_t out_msk_stride,
+                             size_t out_data_stride) {
+  masked_shake_squeeze(ctx, output, outlen, out_msk_stride, out_data_stride,
+                       200 - 128 / 4);
 }
