@@ -7,14 +7,17 @@
 #include <string.h>
 #include <stdlib.h>
 
-uint8_t masked_indcpa_kem_enc_cmp(const uint8_t m[SABER_KEYBYTES], const uint8_t seed_s[SABER_NOISE_SEEDBYTES], const uint8_t pk[SABER_INDCPA_PUBLICKEYBYTES], const uint8_t ciphertext[SABER_BYTES_CCA_DEC]){
+uint8_t masked_indcpa_kem_enc_cmp(const *m, size_t m_msk_stride, size_t m_data_stride, 
+    const uint8_t seed_s[SABER_NOISE_SEEDBYTES], 
+    const uint8_t pk[SABER_INDCPA_PUBLICKEYBYTES], 
+    const uint8_t ciphertext[SABER_BYTES_CCA_DEC]){
 
     uint32_t fail = 0;
     const uint8_t *seed_A = pk + SABER_POLYVECCOMPRESSEDBYTES;
     const uint8_t *ct0 = ciphertext;
     const uint8_t *ct1 = ciphertext + SABER_POLYVECCOMPRESSEDBYTES;
 
-    fail = masked_MatrixVectorMulEncNTT_cmp((uint8_t*)ct0, (uint8_t*)ct1, seed_s, seed_A, pk, m);
+    fail = masked_MatrixVectorMulEncNTT_cmp((uint8_t*)ct0, (uint8_t*)ct1, seed_s, seed_A, pk, m, m_msk_stride, m_data_stride);
     return (uint8_t)fail;
 }
 

@@ -28,7 +28,6 @@ static inline shake128incctx shake128_absorb_seed(const uint8_t seed[SABER_SEEDB
     return ctx;
 }
 
-
 void masked_InnerProdDecNTT(uint8_t *m, size_t m_msk_stide, size_t m_data_stride,
     const uint8_t ciphertext[SABER_BYTES_CCA_DEC], const StrAPolyVec sk_masked){
 
@@ -104,7 +103,7 @@ uint32_t masked_MatrixVectorMulEncNTT_cmp(uint8_t ct0[SABER_POLYVECCOMPRESSEDBYT
                 const uint8_t seed_s[SABER_NOISE_SEEDBYTES*NSHARES], 
                 const uint8_t seed_A[SABER_SEEDBYTES], 
                 const uint8_t pk[SABER_INDCPA_PUBLICKEYBYTES], 
-                const uint8_t m[SABER_KEYBYTES]){
+                uint8_t *m, size_t m_msk_stide, size_t m_data_stride){
 
     uint32_t acc_NTT_32[NSHARES][SABER_N];
     uint32_t A_NTT_32[SABER_N];
@@ -126,7 +125,7 @@ uint32_t masked_MatrixVectorMulEncNTT_cmp(uint8_t ct0[SABER_POLYVECCOMPRESSEDBYT
 
     uint16_t *mp = poly;
 
-    size_t i, j;
+    size_t i, j,d;
     uint32_t fail = 0;
 
     uint8_t masked_seed_s[NSHARES*SABER_SEEDBYTES];
@@ -234,7 +233,10 @@ uint32_t masked_MatrixVectorMulEncNTT_cmp(uint8_t ct0[SABER_POLYVECCOMPRESSEDBYT
     BS2POLmsg(m, mp);
     for (j = 0; j < SABER_N; j++) {
         // work in SABER_Q as for NTT. Could be done in SABER_P.
-        masked_acc[0][j] = (masked_acc[0][j] - (mp[j] << (SABER_EP-1)) + h1)%SABER_Q;
+        masked_acc[0][j] = (masked_acc[0][j] - (((m[(j/8)*m_data_stride]>>(j&0x7))&0x1) << (SABER_EP-1)) + h1)%SABER_Q;
+        for(d = 1; d<NSHARES; d++){
+          masked_acc[d][j] = (masked_acc[d][j] - (((m[d*m_msk_stide + (j/8)*m_data_stride]>>(j&0x7))&0x1) << (SABER_EP-1)))%SABER_Q;
+        }
     }
 
     // compare acc with ct1
