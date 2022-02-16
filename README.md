@@ -9,6 +9,10 @@ The main differences are
     - Kyber768 (in `crypto_kem/kyber768/m4fspeed_masked`, tested on the `nucleo-l4r5zi` target);
     **/!\\This implementation is provided for demonstration and benchmarking purposes.
     It has NOT been subjected to any leakage assessment. Use it at your own risk./!\\**
+    - SABER (in `crypto_kem/saber/m4fspeed_masked`, tested on the `nucleo-l4r5zi` target);
+    **/!\\This implementation is provided for demonstration and benchmarking purposes.
+    It has NOT been subjected to any leakage assessment. Use it at your own risk./!\\**
+
 * some changes in the tooling to allow for finer-grained benchmarking and testing
   (for this, we use a slightly modified version of the `mupq` submodule located
   at <https//github.com/uclcrypto/mupq>).
@@ -52,9 +56,13 @@ CFLAGS="-DNSHARES=2 -DBENCH=1" python3 benchmarks.py -p nucleo-l4r5zi --uart /de
 When referring to this framework in academic literature, please consider using the following bibTeX excerpt:
 
 ```
-@misc{pqm4masked,
-  title = {Bitslicing Arithmetic/Boolean Masking Conversions for Fun and Profit 3 with Application to Lattice-Based KEMs},
-  author = {Olivier Bronchain \and Ga\"{e}tan Cassiers},
+@misc{cryptoeprint:2022:158,
+    author       = {Olivier Bronchain and
+		    Gaëtan Cassiers},
+    title        = {Bitslicing Arithmetic/Boolean Masking Conversions for Fun and Profit with Application to Lattice-Based KEMs},
+    howpublished = {Cryptology ePrint Archive, Report 2022/158},
+    year         = {2022},
+    note         = {\url{https://ia.cr/2022/158}},
 }
 ```
 
@@ -68,4 +76,3 @@ All other code in this repository is released under the conditions of [CC0](http
 
 Note: masked implementations are released under the conditions of the
 [GPLv3](https://www.gnu.org/licenses/gpl-3.0.txt).
-
