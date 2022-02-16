@@ -47,6 +47,8 @@ int crypto_kem_dec(uint8_t *k, const uint8_t *c, const uint8_t *sk)
 {
     uint8_t fail;
     uint8_t buf[64];
+    uint8_t masked_buf[64*NSHARES];
+
     uint8_t kr[64]; // Will contain key, coins
     const uint8_t *pk = sk + SABER_INDCPA_SECRETKEYBYTES;
     const uint8_t *hpk = sk + SABER_SECRETKEYBYTES - 64; // Save hash by storing h(pk) in sk
@@ -63,7 +65,13 @@ int crypto_kem_dec(uint8_t *k, const uint8_t *c, const uint8_t *sk)
     }
 
     // TODO mask output buffer
-    masked_indcpa_kem_dec(masked_sk, c, buf); // buf[0:31] <-- message
+    masked_indcpa_kem_dec(masked_sk, c, masked_buf,64,1); // buf[0:31] <-- message
+    memset(buf, 0, 32);
+    for(size_t d = 0;d <NSHARES;d++){
+      for(size_t i = 0; i<32;i++){
+        buf[i] = masked_buf[d*64 + i];
+      }
+    }
 
     // Copy decrypted -> TODO mask
     memcpy(buf + 32, hpk, 32);  // Multitarget countermeasure for coins + contributory KEM

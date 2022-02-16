@@ -29,13 +29,17 @@ static inline shake128incctx shake128_absorb_seed(const uint8_t seed[SABER_SEEDB
 }
 
 
-void masked_InnerProdDecNTT(uint8_t m[SABER_KEYBYTES],
+void masked_InnerProdDecNTT(uint8_t *m, size_t m_msk_stide, size_t m_data_stride,
     const uint8_t ciphertext[SABER_BYTES_CCA_DEC], const StrAPolyVec sk_masked){
 
     // NTT of ciphertext
     uint32_t c_NTT_32[SABER_L][SABER_N];
     uint16_t c_NTT_16[SABER_L][SABER_N];
-    for (size_t i = 0; i < SABER_L; i++) {
+    StrAPoly m_poly;
+    uint16_t cm[SABER_N];
+    size_t i,j;
+
+    for (i = 0; i < SABER_L; i++) {
         uint16_t poly[SABER_N];
         BS2POLp(ciphertext + i * SABER_POLYCOMPRESSEDBYTES, poly);
         NTT_forward_32(c_NTT_32[i], poly);
@@ -43,8 +47,7 @@ void masked_InnerProdDecNTT(uint8_t m[SABER_KEYBYTES],
     }
 
     // Ciphertex * sk
-    StrAPoly m_poly;
-    for (size_t j=0; j<NSHARES; j++) {
+    for (j=0; j<NSHARES; j++) {
         uint32_t acc_NTT_32[SABER_N];
         uint16_t acc_NTT_16[SABER_N];
         for (size_t i = 0; i < SABER_L; i++) {
@@ -65,14 +68,14 @@ void masked_InnerProdDecNTT(uint8_t m[SABER_KEYBYTES],
         solv_CRT(m_poly[j], acc_NTT_32, acc_NTT_16);
     }
 
-    uint16_t cm[SABER_N];
     BS2POLT(ciphertext + SABER_POLYVECCOMPRESSEDBYTES, cm);
-    for (size_t i = 0; i < SABER_N; i++) {
+    for (i = 0; i < SABER_N; i++) {
         m_poly[0][i] = (SABER_P + m_poly[0][i] + h2 - (cm[i] << (SABER_EP - SABER_ET))) % SABER_P;
     }
 
-    for (size_t i = 0; i < SABER_N; i+=2*BSSIZE) {
+    for (i = 0; i < SABER_N; i+=2*BSSIZE) {
         uint32_t masked_bs[NSHARES*SABER_EP*2];
+
         masked_dense2bitslice_opt(
                 NSHARES, SABER_EP,
                 masked_bs, 1, NSHARES,
@@ -86,10 +89,13 @@ void masked_InnerProdDecNTT(uint8_t m[SABER_KEYBYTES],
                 &masked_bs[(SABER_EP-1)*NSHARES], 1, NSHARES*SABER_EP);    
     }
     
-    Poly poly;
-    unmasked_poly(poly,m_poly,2);
-   
-    POLmsg2BS(m, poly);
+    Poly tmp_poly;
+    for(j=0;j<NSHARES;j++){
+      POLmsg2BS(tmp_poly, m_poly[j]);
+      for(i=0; i<SABER_KEYBYTES;i++){
+        m[i*m_data_stride + j*m_msk_stide] = tmp_poly[i];
+      }
+    }
 }
 
 uint32_t masked_MatrixVectorMulEncNTT_cmp(uint8_t ct0[SABER_POLYVECCOMPRESSEDBYTES], 

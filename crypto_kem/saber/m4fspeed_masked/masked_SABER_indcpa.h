@@ -9,5 +9,5 @@ uint8_t masked_indcpa_kem_enc_cmp(const uint8_t m[SABER_KEYBYTES], const uint8_t
 
 void masked_indcpa_kem_dec(const StrAPolyVec masked_sk, 
     const uint8_t ciphertext[SABER_BYTES_CCA_DEC], 
-    uint8_t m[SABER_KEYBYTES]);
+    uint8_t *m, size_t m_msk_stide, size_t m_data_stride);
 #endif
