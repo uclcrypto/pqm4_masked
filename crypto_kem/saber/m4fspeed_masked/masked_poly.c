@@ -89,11 +89,12 @@ void masked_InnerProdDecNTT(uint8_t *m, size_t m_msk_stide, size_t m_data_stride
                 &masked_bs[(SABER_EP-1)*NSHARES], 1, NSHARES*SABER_EP);    
     }
     
-    Poly tmp_poly;
     for(j=0;j<NSHARES;j++){
-      POLmsg2BS(tmp_poly, m_poly[j]);
       for(i=0; i<SABER_KEYBYTES;i++){
-        m[i*m_data_stride + j*m_msk_stide] = tmp_poly[i];
+        m[i*m_data_stride + j*m_msk_stide] = 0;
+        for(size_t b=0; b<8;b++){ 
+          m[i*m_data_stride + j*m_msk_stide] |= m_poly[j][i*8+b]<<b;
+        }
       }
     }
 }

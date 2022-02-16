@@ -69,7 +69,7 @@ int crypto_kem_dec(uint8_t *k, const uint8_t *c, const uint8_t *sk)
     memset(buf, 0, 32);
     for(size_t d = 0;d <NSHARES;d++){
       for(size_t i = 0; i<32;i++){
-        buf[i] = masked_buf[d*64 + i];
+        buf[i] ^= masked_buf[d*64 + i];
       }
     }
 
