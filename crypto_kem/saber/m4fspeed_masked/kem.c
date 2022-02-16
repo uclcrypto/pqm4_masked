@@ -49,7 +49,7 @@ int crypto_kem_dec(uint8_t *k, const uint8_t *c, const uint8_t *sk)
     const uint8_t *pk = sk + SABER_INDCPA_SECRETKEYBYTES;
     const uint8_t *hpk = sk + SABER_SECRETKEYBYTES - 64; // Save hash by storing h(pk) in sk
 
-    // TODO mask
+    // TODO mask output buffer
     masked_indcpa_kem_dec(sk, c, buf); // buf[0:31] <-- message
 
     // Copy decrypted -> TODO mask

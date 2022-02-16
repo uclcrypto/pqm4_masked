@@ -303,13 +303,14 @@ static void masked_shake_squeeze(
         uint8_t *out, size_t outlen, size_t out_msk_stride, size_t out_data_stride,
         size_t rate
         ) {
+
   uint64_t *msk_a = &ctx->state.w[0][0];
   // First absorb what's left.
   size_t len = MIN(outlen, ctx->rem_bytes);
   for (size_t i = 0; i < len; i++) {
       for (size_t j = 0; j < NSHARES; j++) {
           out[i * out_data_stride + j * out_msk_stride] =
-              ExtractU64(msk_a, i + j * Plen);
+              ExtractU64(msk_a, (rate - ctx->rem_bytes) + i + j * Plen);
       }
   }
   out += len * out_data_stride;
