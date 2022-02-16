@@ -3,6 +3,7 @@
 #include "fips202.h"
 #include "poly.h"
 #include "masked_poly.h"
+#include "masked.h"
 #include <string.h>
 #include <stdlib.h>
 
@@ -17,8 +18,10 @@ uint8_t masked_indcpa_kem_enc_cmp(const uint8_t m[SABER_KEYBYTES], const uint8_t
     return (uint8_t)fail;
 }
 
-void masked_indcpa_kem_dec(const uint8_t sk[SABER_INDCPA_SECRETKEYBYTES], const uint8_t ciphertext[SABER_BYTES_CCA_DEC], uint8_t m[SABER_KEYBYTES]){
+void masked_indcpa_kem_dec(const StrAPolyVec masked_sk, 
+    const uint8_t ciphertext[SABER_BYTES_CCA_DEC], 
+    uint8_t m[SABER_KEYBYTES]){
 
-    masked_InnerProdDecNTT(m, ciphertext, sk); // m <- Pack(Round(b'*s - cm))
+    masked_InnerProdDecNTT(m, ciphertext, masked_sk); // m <- Pack(Round(b'*s - cm))
 
 }

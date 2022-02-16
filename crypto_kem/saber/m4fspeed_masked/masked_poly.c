@@ -30,18 +30,7 @@ static inline shake128incctx shake128_absorb_seed(const uint8_t seed[SABER_SEEDB
 
 
 void masked_InnerProdDecNTT(uint8_t m[SABER_KEYBYTES],
-    const uint8_t ciphertext[SABER_BYTES_CCA_DEC], const uint8_t sk[SABER_INDCPA_SECRETKEYBYTES]){
-
-    // TODO Store the secret key masked.
-    StrAPolyVec sk_masked;
-    for (size_t i = 0; i < SABER_L; i++) {
-#ifdef SABER_COMPRESS_SECRETKEY
-        BS2POLmu(sk + i * SABER_POLYSECRETBYTES, sk_masked[i][0]);
-#else
-        BS2POLq(sk + i * SABER_POLYSECRETBYTES, sk_masked[i][0]);
-#endif
-        mask_poly_inplace(sk_masked[i], SABER_P);
-    }
+    const uint8_t ciphertext[SABER_BYTES_CCA_DEC], const StrAPolyVec sk_masked){
 
     // NTT of ciphertext
     uint32_t c_NTT_32[SABER_L][SABER_N];

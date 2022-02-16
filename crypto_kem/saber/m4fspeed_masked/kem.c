@@ -5,6 +5,8 @@
 #include "SABER_indcpa.h"
 #include "masked_SABER_indcpa.h"
 #include <string.h>
+#include "masked.h"
+#include "pack_unpack.h"
 
 int crypto_kem_keypair(uint8_t *pk, uint8_t *sk)
 {
@@ -48,9 +50,20 @@ int crypto_kem_dec(uint8_t *k, const uint8_t *c, const uint8_t *sk)
     uint8_t kr[64]; // Will contain key, coins
     const uint8_t *pk = sk + SABER_INDCPA_SECRETKEYBYTES;
     const uint8_t *hpk = sk + SABER_SECRETKEYBYTES - 64; // Save hash by storing h(pk) in sk
+    StrAPolyVec masked_sk;
+
+    // TODO Store the secret key masked.
+    for (size_t i = 0; i < SABER_L; i++) {
+#ifdef SABER_COMPRESS_SECRETKEY
+        BS2POLmu(sk + i * SABER_POLYSECRETBYTES, masked_sk[i][0]);
+#else
+        BS2POLq(sk + i * SABER_POLYSECRETBYTES, masked_sk[i][0]);
+#endif
+        mask_poly_inplace(masked_sk[i], SABER_P);
+    }
 
     // TODO mask output buffer
-    masked_indcpa_kem_dec(sk, c, buf); // buf[0:31] <-- message
+    masked_indcpa_kem_dec(masked_sk, c, buf); // buf[0:31] <-- message
 
     // Copy decrypted -> TODO mask
     memcpy(buf + 32, hpk, 32);  // Multitarget countermeasure for coins + contributory KEM
