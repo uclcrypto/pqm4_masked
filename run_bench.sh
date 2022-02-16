@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCHEME=saber
+SCHEME=kyber768
 TARGET=$SCHEME/m4fspeed_masked
 CYCLES_NAME=$SCHEME\_cycles.csv
 RND_NAME=$SCHEME\_rnd.csv

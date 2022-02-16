@@ -4,7 +4,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 ds = np.arange(2,16)
-target = "saber"
+#target = "saber"
+target = "kyber768"
 rnd_name = target+"_rnd.csv"
 cycles_name = target+"_cycles.csv"
 
