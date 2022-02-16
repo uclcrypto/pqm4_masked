@@ -1,6 +1,7 @@
 #include "api.h"
 #include "verify.h"
 #include "fips202.h"
+#include "masked_fips202.h"
 #include "randombytes.h"
 #include "SABER_indcpa.h"
 #include "masked_SABER_indcpa.h"
@@ -74,14 +75,14 @@ int crypto_kem_dec(uint8_t *k, const uint8_t *c, const uint8_t *sk)
       }
     }
     
-    // Copy decrypted -> TODO mask
-    memcpy(buf + 32, hpk, 32);  // Multitarget countermeasure for coins + contributory KEM
-
     // Hash decrypted to get coins -> TODO mask
-    memcpy(buf + 32, hpk, 32);  // Multitarget countermeasure for coins + contributory KEM
-    sha3_512(kr, buf, 64);
-    memset(masked_kr,0, sizeof(masked_kr));
-    memcpy(masked_kr,kr,sizeof(kr));
+    //memcpy(buf + 32, hpk, 32);  // Multitarget countermeasure for coins + contributory KEM
+    memcpy(masked_buf + 32, hpk, 32);  // Multitarget countermeasure for coins + contributory KEM
+    for(size_t d =1; d<NSHARES;d++){
+      memset(masked_buf + 32 + d*64, 0, 32);
+    }
+    masked_sha3_512(masked_kr, 64,1, masked_buf, 64, 64,1);
+
     // Compare with re-encrypted -> TODO mask
     fail = masked_indcpa_kem_enc_cmp(masked_buf,64,1, &masked_kr[32],64,1, pk, c); //in-place verification of the re-encryption
 
@@ -89,6 +90,13 @@ int crypto_kem_dec(uint8_t *k, const uint8_t *c, const uint8_t *sk)
     sha3_256(kr + 32, c, SABER_BYTES_CCA_DEC); // overwrite coins in kr with h(c)
 
     // No need to mask this, like for Kyber
+    // -> unmask K in kr
+    memset(kr,0,32);
+    for(size_t d = 0; d< NSHARES;d++){
+      for(size_t i=0; i<32;i++){
+        kr[i] ^= masked_kr[d*64 + i];
+      }
+    }
     cmov(kr, sk + SABER_SECRETKEYBYTES - SABER_KEYBYTES, SABER_KEYBYTES, fail);
 
     // No need to mask this, like for Kyber
