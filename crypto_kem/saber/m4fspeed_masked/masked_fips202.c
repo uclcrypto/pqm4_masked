@@ -292,6 +292,7 @@ static void masked_shake_inc_init(MaskedShakeCtx *ctx, const uint8_t *in,
   // Xor in the DS and pad frame.
   XORU64(msk_a, inlen, delim);
   XORU64(msk_a, rate - 1, 0x80);
+  stop_bench(keccak);
 }
 
 #define MIN(X, Y) (((X) < (Y)) ? (X) : (Y))
@@ -299,6 +300,7 @@ static void masked_shake_squeeze(MaskedShakeCtx *ctx, uint8_t *out,
                                  size_t outlen, size_t out_msk_stride,
                                  size_t out_data_stride, size_t rate) {
 
+  start_bench(keccak);
   uint64_t *msk_a = &ctx->state.w[0][0];
   // First absorb what's left.
   size_t len = MIN(outlen, ctx->rem_bytes);
@@ -324,6 +326,7 @@ static void masked_shake_squeeze(MaskedShakeCtx *ctx, uint8_t *out,
     outlen -= len;
     ctx->rem_bytes = rate - len;
   }
+  stop_bench(keccak);
 }
 
 /*************************************************

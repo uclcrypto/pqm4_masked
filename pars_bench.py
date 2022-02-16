@@ -3,6 +3,22 @@ import pandas
 import numpy as np
 import matplotlib.pyplot as plt
 
+ds = np.arange(2,16)
+target = "saber"
+rnd_name = target+"_rnd.csv"
+cycles_name = target+"_cycles.csv"
+
+if target == "kyber768":
+    benchs = ['my_cmp_finalize',"decaps","keccak",
+            'my_masked_poly_cmp',"my_cbd","my_frommsg","my_tomsg","my_matacc","my_ntt"]
+    
+    #benchs +=["my_dense2bs","my_bs2dense"]
+    #benchs += ["my_secadd","my_seca2b"]
+elif target == "saber":
+    benchs = ["decaps","keccak",
+            "my_cbd","my_cmp_finalize",
+            "my_masked_poly_cmp","my_matacc","my_ntt","my_tomsg"] 
+
 def get_perf(df,l,k):
     for x in l:
         df = df[df[x[0]].isin([x[1]])]
@@ -22,27 +38,19 @@ def extract_all(df,ds,names,k):
 
 if __name__ == "__main__":
 
-    ds = np.arange(2,17)
-    k = "perf"
-    benchs = ['my_cmp_finalize',"decaps","keccak",
-            'my_masked_poly_cmp',"my_cbd","my_frommsg","my_tomsg","my_matacc","my_ntt"]
-    benchs +=["my_dense2bs","my_bs2dense"]
-    #benchs += ["my_secadd","my_seca2b"]
     
-    df = pandas.read_csv("bench_masked_cycles.csv")
+    df = pandas.read_csv(cycles_name)
     cycles = extract_all(df,ds,benchs,"perf")
 
-    df = pandas.read_csv("bench_masked_rnd.csv")
+    df = pandas.read_csv(rnd_name)
     rnds = extract_all(df,ds,benchs,"perf")
 
     # print raw numbers
-    """
     plt.figure()
     for k,cycle in cycles.items():
         plt.semilogy(ds,cycle,label=k)
     plt.legend()
     plt.grid(True,which="both",ls="--")
-    """
 
     # print percentage
     plt.figure()

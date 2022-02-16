@@ -19,7 +19,7 @@
 #include "mNTT.h"
 #include "masked_cbd.h"
 #include <string.h>
-//#include "NTT.h"
+#include "bench.h"
 #include "fips202.h"
 #include "gadgets.h"
 #include "masked.h"
@@ -76,10 +76,14 @@ void masked_InnerProdDecNTT(uint8_t *m, size_t m_msk_stide,
   for (i = 0; i < SABER_L; i++) {
     uint16_t poly[SABER_N];
     BS2POLp(ciphertext + i * SABER_POLYCOMPRESSEDBYTES, poly);
+    
+    start_bench(my_ntt);
     NTT_forward_32(c_NTT_32[i], poly);
     NTT_forward_16(c_NTT_16[i], poly);
+    stop_bench(my_ntt);
   }
 
+  start_bench(my_ntt);
   // inner product: Ciphertex * sk
   for (j = 0; j < NSHARES; j++) {
     uint32_t acc_NTT_32[SABER_N];
@@ -87,6 +91,7 @@ void masked_InnerProdDecNTT(uint8_t *m, size_t m_msk_stide,
     for (i = 0; i < SABER_L; i++) {
       uint32_t poly_NTT_32[SABER_N];
       uint16_t poly_NTT_16[SABER_N];
+
       NTT_forward_32(poly_NTT_32, sk_masked[i][j]);
       NTT_forward_16(poly_NTT_16, sk_masked[i][j]);
       if (i == 0) {
@@ -101,7 +106,9 @@ void masked_InnerProdDecNTT(uint8_t *m, size_t m_msk_stide,
     NTT_inv_16(acc_NTT_16);
     solv_CRT(m_poly[j], acc_NTT_32, acc_NTT_16);
   }
+  stop_bench(my_ntt);
 
+  start_bench(my_tomsg);
   BS2POLT(ciphertext + SABER_POLYVECCOMPRESSEDBYTES, cm);
   for (i = 0; i < SABER_N; i++) {
     m_poly[0][i] =
@@ -129,6 +136,7 @@ void masked_InnerProdDecNTT(uint8_t *m, size_t m_msk_stide,
       }
     }
   }
+  stop_bench(my_tomsg);
 }
 
 /*************************************************
@@ -191,23 +199,30 @@ uint32_t masked_MatrixVectorMulEncNTT_cmp(
     masked_cbd_seed(NSHARES, &m_poly[0][0], SABER_N, 1, masked_shake_out,
                     SABER_POLYCOINBYTES, 1);
 
+    start_bench(my_ntt);
     for (d = 0; d < NSHARES; d++) {
       NTT_forward_32(s_NTT_32[d] + i * SABER_N, m_poly[d]);
       NTT_forward_16(s_NTT_16[d] + i * SABER_N, m_poly[d]);
     }
+    stop_bench(my_ntt);
   }
 
   // init Shake to generate A matrix
+  start_bench(my_matacc);
   shake128incctx shake_A_ctx = shake128_absorb_seed(seed_A);
+  stop_bench(my_matacc);
 
 
   for (i = 0; i < SABER_L; i++) {
 
     for (j = 0; j < SABER_L; j++) {
 
+      start_bench(my_matacc);
       shake128_inc_squeeze(shake_out, SABER_POLYBYTES, &shake_A_ctx);
+      stop_bench(my_matacc);
       BS2POLq(shake_out, poly);
 
+      start_bench(my_ntt);
       NTT_forward_32(A_NTT_32, poly);
       NTT_forward_16(A_NTT_16, poly);
 
@@ -220,13 +235,16 @@ uint32_t masked_MatrixVectorMulEncNTT_cmp(
           NTT_mul_acc_16(acc_NTT_16[d], A_NTT_16, s_NTT_16[d] + j * SABER_N);
         }
       }
+      stop_bench(my_ntt);
     }
 
+    start_bench(my_ntt);
     for (d = 0; d < NSHARES; d++) {
       NTT_inv_32(acc_NTT_32[d]);
       NTT_inv_16(acc_NTT_16[d]);
       solv_CRT(masked_acc[d], acc_NTT_32[d], acc_NTT_16[d]);
     }
+    stop_bench(my_ntt);
 
     for (j = 0; j < SABER_N; j++) {
       masked_acc[0][j] = (masked_acc[0][j] + h1) % SABER_Q;
@@ -241,8 +259,10 @@ uint32_t masked_MatrixVectorMulEncNTT_cmp(
                     &masked_acc[0][0], SABER_N, 1, myref);
   }
 
+
   shake128_inc_ctx_release(&shake_A_ctx);
 
+  start_bench(my_ntt);
   for (j = 0; j < SABER_L; j++) {
 
     BS2POLp(pk + j * SABER_POLYCOMPRESSEDBYTES, poly);
@@ -260,12 +280,13 @@ uint32_t masked_MatrixVectorMulEncNTT_cmp(
       }
     }
   }
-
+  
   for (d = 0; d < NSHARES; d++) {
     NTT_inv_32(acc_NTT_32[d]);
     NTT_inv_16(acc_NTT_16[d]);
     solv_CRT(masked_acc[d], acc_NTT_32[d], acc_NTT_16[d]);
   }
+  stop_bench(my_ntt);
 
   for (j = 0; j < SABER_N; j++) {
     // work in SABER_Q as for NTT. Could be done in SABER_P.
@@ -319,6 +340,7 @@ void masked_poly_cmp(size_t b_start, size_t b_end, size_t coeffs_size,
                      const uint16_t *mp,size_t mp_msk_stride, size_t mp_data_stride, 
                      Poly ref) {
 
+  start_bench(my_masked_poly_cmp);
   size_t i, b;
   uint32_t bits[2 * NSHARES * coeffs_size];
   uint32_t bits_ref[2 * coeffs_size];
@@ -347,11 +369,13 @@ void masked_poly_cmp(size_t b_start, size_t b_end, size_t coeffs_size,
                  &bits[(b + b_start + coeffs_size) * NSHARES], 1);
     }
   }
+  stop_bench(my_masked_poly_cmp);
 }
 
 
 void finalize_cmp(uint32_t *bits) {
 
+  start_bench(my_cmp_finalize);
   uint32_t other[NSHARES];
   int d;
   for (d = 0; d < NSHARES; d++) {
@@ -377,4 +401,5 @@ void finalize_cmp(uint32_t *bits) {
     other[d] = bits[d] >> 1;
   }
   masked_and(NSHARES, bits, 1, bits, 1, other, 1);
+  stop_bench(my_cmp_finalize);
 }
