@@ -1,3 +1,19 @@
+/* Copyright 2022 UCLouvain, Belgium and PQM4 contributors
+ *
+ * This file is part of pqm4_masked.
+ *
+ * pqm4_masked is free software: you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License as published by the Free
+ * Software Foundation, version 3.
+ *
+ * pqm4_masked is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+ * more details.
+ *
+ * You should have received a copy of the GNU General Public License along with
+ * pqm4_masked. If not, see <https://www.gnu.org/licenses/>.
+ */
 #include "masked_poly.h"
 #include "cbd.h"
 #include "mNTT.h"
@@ -31,6 +47,18 @@ shake128_absorb_seed(const uint8_t seed[SABER_SEEDBYTES]) {
   return ctx;
 }
 
+/*************************************************
+ * Name:        masked_InnerProdDecNTT
+ *
+ * Description: Performs Inner product between masked key and public 
+ *            ciphertext.
+ *
+ * Arguments: - uint8_t *m: compression of inner product. Size of SABER_KEYBYTES
+ *            - size_t m_msk_stide: m shares stride
+ *            - size_t m_data_stride: m data stride
+ *            - const uint8_t *: public ciphertext
+ *            - StrAPolyVec: masked secret key
+ **************************************************/
 void masked_InnerProdDecNTT(uint8_t *m, size_t m_msk_stide,
                             size_t m_data_stride,
                             const uint8_t ciphertext[SABER_BYTES_CCA_DEC],
@@ -44,6 +72,7 @@ void masked_InnerProdDecNTT(uint8_t *m, size_t m_msk_stide,
   uint32_t masked_bs[NSHARES * SABER_EP * 2];
   size_t i, j, b;
 
+  // decompress and NTT public ciphertext.
   for (i = 0; i < SABER_L; i++) {
     uint16_t poly[SABER_N];
     BS2POLp(ciphertext + i * SABER_POLYCOMPRESSEDBYTES, poly);
@@ -51,7 +80,7 @@ void masked_InnerProdDecNTT(uint8_t *m, size_t m_msk_stide,
     NTT_forward_16(c_NTT_16[i], poly);
   }
 
-  // Ciphertex * sk
+  // inner product: Ciphertex * sk
   for (j = 0; j < NSHARES; j++) {
     uint32_t acc_NTT_32[SABER_N];
     uint16_t acc_NTT_16[SABER_N];
@@ -80,6 +109,7 @@ void masked_InnerProdDecNTT(uint8_t *m, size_t m_msk_stide,
         SABER_P;
   }
 
+  // compression of mpoly
   for (i = 0; i < SABER_N; i += 2 * BSSIZE) {
     masked_dense2bitslice_opt(NSHARES, SABER_EP, masked_bs, 1, NSHARES,
                               &m_poly[0][i], SABER_N, 1);
@@ -90,6 +120,7 @@ void masked_InnerProdDecNTT(uint8_t *m, size_t m_msk_stide,
                               NSHARES * SABER_EP);
   }
 
+  // map compressed mpoly into m
   for (j = 0; j < NSHARES; j++) {
     for (i = 0; i < SABER_KEYBYTES; i++) {
       m[i * m_data_stride + j * m_msk_stide] = 0;
@@ -100,6 +131,22 @@ void masked_InnerProdDecNTT(uint8_t *m, size_t m_msk_stide,
   }
 }
 
+/*************************************************
+ * Name:        masked_MatrixVectorMulEncNTT_cmp
+ *
+ * Description: Performs matrix product and compare the result with ct1 and ct0
+ *
+ * Arguments: - uint8_t *ct0: reference ciphertext
+ *            - uint8_t *ct1: reference cipehrtext
+ *            - uint8_t *seed_s: buffer containing seed for CBD sampling
+ *            - size_t seed_s_msk_stride: seed_s msk stride
+ *            - size_t seed_s_data_stride: seed_s data stride
+ *            - uint8_t *seed_A: buffer containing seed to derive public matrix
+ *            - uint8_t *pk: public key
+ *            - uint8_t *m: Message to decrypt. Size of SABER_KEYBYTES
+ *            - size_t m_msk_stide: m shares stride
+ *            - size_t m_data_stride: m data stride
+ **************************************************/
 uint32_t masked_MatrixVectorMulEncNTT_cmp(
     uint8_t ct0[SABER_POLYVECCOMPRESSEDBYTES],
     uint8_t ct1[SABER_SCALEBYTES_KEM], const uint8_t *seed_s,
@@ -108,6 +155,7 @@ uint32_t masked_MatrixVectorMulEncNTT_cmp(
     const uint8_t pk[SABER_INDCPA_PUBLICKEYBYTES], const uint8_t *m,
     size_t m_msk_stide, size_t m_data_stride) {
 
+  // s ac and A in NTT domain.
   uint32_t acc_NTT_32[NSHARES][SABER_N];
   uint32_t A_NTT_32[SABER_N];
   uint32_t s_NTT_32[NSHARES][SABER_L * SABER_N];
@@ -116,18 +164,21 @@ uint32_t masked_MatrixVectorMulEncNTT_cmp(
   uint16_t A_NTT_16[SABER_N];
   uint16_t s_NTT_16[NSHARES][SABER_L * SABER_N];
 
-  uint16_t poly[SABER_N];
+  uint16_t poly[SABER_N]; // public polynomial (from A)
   uint16_t m_poly[NSHARES][SABER_N];
-  uint16_t myref[SABER_N];
-  uint16_t masked_acc[NSHARES][SABER_N];
+  Poly myref; // reference polynomial to compare
+  StrAPoly masked_acc;
 
   uint8_t shake_out[MAX(SABER_POLYBYTES, SABER_POLYCOINBYTES)];
   uint8_t masked_shake_out[MAX(SABER_POLYBYTES, SABER_POLYCOINBYTES) * NSHARES];
 
-  uint16_t *mp = poly;
-
   size_t i, j, d;
+
+  // comparison flags
   uint32_t fail = 0;
+  uint32_t masked_fail[NSHARES];
+  memset(masked_fail, 0, sizeof(masked_fail));
+  masked_fail[0] = 0xFFFFFFFF;
 
   MaskedShakeCtx masked_shake_s_ctx;
   masked_shake128_inc_init(&masked_shake_s_ctx, seed_s, SABER_SEEDBYTES,
@@ -146,11 +197,9 @@ uint32_t masked_MatrixVectorMulEncNTT_cmp(
     }
   }
 
+  // init Shake to generate A matrix
   shake128incctx shake_A_ctx = shake128_absorb_seed(seed_A);
 
-  uint32_t rc[NSHARES];
-  memset(rc, 0, sizeof(rc));
-  rc[0] = 0xFFFFFFFF;
 
   for (i = 0; i < SABER_L; i++) {
 
@@ -162,7 +211,6 @@ uint32_t masked_MatrixVectorMulEncNTT_cmp(
       NTT_forward_32(A_NTT_32, poly);
       NTT_forward_16(A_NTT_16, poly);
 
-      // TODO
       for (d = 0; d < NSHARES; d++) {
         if (j == 0) {
           NTT_mul_32(acc_NTT_32[d], A_NTT_32, s_NTT_32[d] + j * SABER_N);
@@ -189,8 +237,8 @@ uint32_t masked_MatrixVectorMulEncNTT_cmp(
     for (j = 0; j < SABER_N; j++) {
       myref[j] = myref[j] % SABER_P;
     }
-    masked_poly_cmp(SABER_EQ - SABER_EP, SABER_EQ, SABER_EQ, rc,
-                    &masked_acc[0][0], myref);
+    masked_poly_cmp(SABER_EQ - SABER_EP, SABER_EQ, SABER_EQ, masked_fail,
+                    &masked_acc[0][0], SABER_N, 1, myref);
   }
 
   shake128_inc_ctx_release(&shake_A_ctx);
@@ -219,7 +267,6 @@ uint32_t masked_MatrixVectorMulEncNTT_cmp(
     solv_CRT(masked_acc[d], acc_NTT_32[d], acc_NTT_16[d]);
   }
 
-  BS2POLmsg(m, mp);
   for (j = 0; j < SABER_N; j++) {
     // work in SABER_Q as for NTT. Could be done in SABER_P.
     masked_acc[0][j] =
@@ -241,22 +288,36 @@ uint32_t masked_MatrixVectorMulEncNTT_cmp(
   for (j = 0; j < SABER_N; j++) {
     myref[j] = myref[j] % (1 << SABER_ET);
   }
-  masked_poly_cmp(SABER_EP - SABER_ET, SABER_EP, SABER_EP, rc,
-                  &masked_acc[0][0], myref);
+  masked_poly_cmp(SABER_EP - SABER_ET, SABER_EP, SABER_EP, masked_fail,
+                  &masked_acc[0][0], SABER_N, 1, myref);
 
   // finalize the comparison
-  finalize_cmp(rc);
+  finalize_cmp(masked_fail);
   fail = 0;
   for (d = 0; d < NSHARES; d++) {
-    fail ^= rc[d];
+    fail ^= masked_fail[d];
   }
   return !fail;
 }
 
+/*************************************************
+ * Name:       masked_poly_cmp 
+ *
+ * Description: Compares masked polynomial with reference polynomial 
+ *
+ * Arguments: - size_t b_start: first bit to compare
+ *            - size_t b_end: last bit to compare
+ *            - size_t coeffs_size: number of bits in polynomial modulus
+ *            - uint32_t *rc: check bits array
+ *            - const uint16_t *mp: masked polynomial 
+ *            - size_t mp_msk_stide: m shares stride
+ *            - size_t mp_data_stride: m data stride
+ *            - Poly ref: reference polynomial
+ **************************************************/
 void masked_poly_cmp(size_t b_start, size_t b_end, size_t coeffs_size,
                      uint32_t *rc,
-                     // TODO stride on mp
-                     const uint16_t *mp, uint16_t *ref) {
+                     const uint16_t *mp,size_t mp_msk_stride, size_t mp_data_stride, 
+                     Poly ref) {
 
   size_t i, b;
   uint32_t bits[2 * NSHARES * coeffs_size];
@@ -266,7 +327,7 @@ void masked_poly_cmp(size_t b_start, size_t b_end, size_t coeffs_size,
 
     // convert masked poly
     masked_dense2bitslice_opt(NSHARES, coeffs_size, bits, 1, NSHARES, mp,
-                              SABER_N, 1);
+                              mp_msk_stride, mp_data_stride);
 
     seca2b(NSHARES, coeffs_size, bits, 1, NSHARES);
     seca2b(NSHARES, coeffs_size, &bits[NSHARES * coeffs_size], 1, NSHARES);
@@ -287,6 +348,8 @@ void masked_poly_cmp(size_t b_start, size_t b_end, size_t coeffs_size,
     }
   }
 }
+
+
 void finalize_cmp(uint32_t *bits) {
 
   uint32_t other[NSHARES];

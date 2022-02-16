@@ -1,6 +1,39 @@
+/* Copyright 2022 UCLouvain, Belgium and PQM4 contributors
+ *
+ * This file is part of pqm4_masked.
+ *
+ * pqm4_masked is free software: you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License as published by the Free
+ * Software Foundation, version 3.
+ *
+ * pqm4_masked is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+ * more details.
+ *
+ * You should have received a copy of the GNU General Public License along with
+ * pqm4_masked. If not, see <https://www.gnu.org/licenses/>.
+ */
 #include "masked_cbd.h"
 #include "gadgets.h"
 
+
+/*************************************************
+ * Name:        masked_cbd_seed
+ *
+ * Description: Computes central binomial distribution for an entire polynomial.
+ *              Noise is generate from a seed
+ *              z = (HW(a) - HW(b)). Output is an arithmetic masking
+ *              https://eprint.iacr.org/2022/158.pdf, Algo 6.
+ *
+ * Arguments: - size_t nshares: number of shares
+ *            - uint16_t *s: output polynomial
+ *            - size_t s_msk_stide: s shares stride
+ *            - size_t s_data_stride: s data stride
+ *            - uint8_t *buf: seed buffer
+ *            - size_t buf_msk_stride: buf shares stride
+ *            - size_t buf_data_stride: buf data stride
+ **************************************************/
 void masked_cbd_seed(size_t nshares, uint16_t *s, size_t s_msk_stride,
                      size_t s_data_stride, const uint8_t *buf,
                      size_t buf_msk_stride, size_t buf_data_stride) {
