@@ -8,6 +8,8 @@
 #include <string.h>
 #include "masked.h"
 #include "pack_unpack.h"
+#include "masked_poly.h"
+#include "masked_utils.h"
 
 int crypto_kem_keypair(uint8_t *pk, uint8_t *sk)
 {
@@ -47,7 +49,6 @@ int crypto_kem_enc(uint8_t *c, uint8_t *k, const uint8_t *pk)
 int crypto_kem_dec(uint8_t *k, const uint8_t *c, const uint8_t *sk)
 {
     uint8_t fail;
-    uint8_t buf[64];
     uint8_t masked_buf[64*NSHARES];
 
     uint8_t kr[64]; // Will contain key, coins
@@ -66,25 +67,21 @@ int crypto_kem_dec(uint8_t *k, const uint8_t *c, const uint8_t *sk)
         mask_poly_inplace(masked_sk[i], SABER_P);
     }
 
-    // TODO mask output buffer
+    // masked_sk has no const flag.
     masked_indcpa_kem_dec(masked_sk, c, masked_buf,64,1); // buf[0:31] <-- message
-    memset(buf, 0, 32);
-    for(size_t d = 0;d <NSHARES;d++){
-      for(size_t i = 0; i<32;i++){
-        buf[i] ^= masked_buf[d*64 + i];
-      }
-    }
     
-    // Hash decrypted to get coins -> TODO mask
-    //memcpy(buf + 32, hpk, 32);  // Multitarget countermeasure for coins + contributory KEM
-    memcpy(masked_buf + 32, hpk, 32);  // Multitarget countermeasure for coins + contributory KEM
+    // masking the hpk
+    memcpy(masked_buf + 32, hpk, 32);
     for(size_t d =1; d<NSHARES;d++){
       memset(masked_buf + 32 + d*64, 0, 32);
     }
+    // Hash decrypted to get coins
     masked_sha3_512(masked_kr, 64,1, masked_buf, 64, 64,1);
 
-    // Compare with re-encrypted -> TODO mask
-    fail = masked_indcpa_kem_enc_cmp(masked_buf,64,1, &masked_kr[32],64,1, pk, c); //in-place verification of the re-encryption
+    // Compare with re-encrypted
+    fail = masked_indcpa_kem_enc_cmp(masked_buf, 64, 1, 
+        &masked_kr[32], 64, 1, 
+        pk, c); //in-place verification of the re-encryption
 
     // Not masked: H(c)
     sha3_256(kr + 32, c, SABER_BYTES_CCA_DEC); // overwrite coins in kr with h(c)

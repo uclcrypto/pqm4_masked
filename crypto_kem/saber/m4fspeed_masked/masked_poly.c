@@ -29,14 +29,15 @@ static inline shake128incctx shake128_absorb_seed(const uint8_t seed[SABER_SEEDB
 }
 
 void masked_InnerProdDecNTT(uint8_t *m, size_t m_msk_stide, size_t m_data_stride,
-    const uint8_t ciphertext[SABER_BYTES_CCA_DEC], const StrAPolyVec sk_masked){
+    const uint8_t ciphertext[SABER_BYTES_CCA_DEC], StrAPolyVec sk_masked){
 
     // NTT of ciphertext
     uint32_t c_NTT_32[SABER_L][SABER_N];
     uint16_t c_NTT_16[SABER_L][SABER_N];
     StrAPoly m_poly;
     uint16_t cm[SABER_N];
-    size_t i,j;
+    uint32_t masked_bs[NSHARES*SABER_EP*2];
+    size_t i,j,b;
 
     for (i = 0; i < SABER_L; i++) {
         uint16_t poly[SABER_N];
@@ -46,10 +47,10 @@ void masked_InnerProdDecNTT(uint8_t *m, size_t m_msk_stide, size_t m_data_stride
     }
 
     // Ciphertex * sk
-    for (j=0; j<NSHARES; j++) {
+    for (j = 0; j<NSHARES; j++) {
         uint32_t acc_NTT_32[SABER_N];
         uint16_t acc_NTT_16[SABER_N];
-        for (size_t i = 0; i < SABER_L; i++) {
+        for (i = 0; i < SABER_L; i++) {
             uint32_t poly_NTT_32[SABER_N];
             uint16_t poly_NTT_16[SABER_N];
             NTT_forward_32(poly_NTT_32, sk_masked[i][j]);
@@ -73,8 +74,6 @@ void masked_InnerProdDecNTT(uint8_t *m, size_t m_msk_stide, size_t m_data_stride
     }
 
     for (i = 0; i < SABER_N; i+=2*BSSIZE) {
-        uint32_t masked_bs[NSHARES*SABER_EP*2];
-
         masked_dense2bitslice_opt(
                 NSHARES, SABER_EP,
                 masked_bs, 1, NSHARES,
@@ -91,7 +90,7 @@ void masked_InnerProdDecNTT(uint8_t *m, size_t m_msk_stide, size_t m_data_stride
     for(j=0;j<NSHARES;j++){
       for(i=0; i<SABER_KEYBYTES;i++){
         m[i*m_data_stride + j*m_msk_stide] = 0;
-        for(size_t b=0; b<8;b++){ 
+        for(b=0; b<8;b++){ 
           m[i*m_data_stride + j*m_msk_stide] |= m_poly[j][i*8+b]<<b;
         }
       }
@@ -103,7 +102,7 @@ uint32_t masked_MatrixVectorMulEncNTT_cmp(uint8_t ct0[SABER_POLYVECCOMPRESSEDBYT
                 const uint8_t *seed_s, size_t seed_s_msk_stride, size_t seed_s_data_stride, 
                 const uint8_t seed_A[SABER_SEEDBYTES], 
                 const uint8_t pk[SABER_INDCPA_PUBLICKEYBYTES], 
-                uint8_t *m, size_t m_msk_stide, size_t m_data_stride){
+                const uint8_t *m, size_t m_msk_stide, size_t m_data_stride){
 
     uint32_t acc_NTT_32[NSHARES][SABER_N];
     uint32_t A_NTT_32[SABER_N];
@@ -114,9 +113,7 @@ uint32_t masked_MatrixVectorMulEncNTT_cmp(uint8_t ct0[SABER_POLYVECCOMPRESSEDBYT
     uint16_t s_NTT_16[NSHARES][SABER_L * SABER_N];
 
     uint16_t poly[SABER_N];
-    uint16_t poly_ref[SABER_N];
     uint16_t m_poly[NSHARES][SABER_N];
-    uint16_t acc[SABER_N];
     uint16_t myref[SABER_N];
     uint16_t masked_acc[NSHARES][SABER_N];
 
@@ -125,7 +122,7 @@ uint32_t masked_MatrixVectorMulEncNTT_cmp(uint8_t ct0[SABER_POLYVECCOMPRESSEDBYT
 
     uint16_t *mp = poly;
 
-    size_t i, j,d;
+    size_t i, j, d;
     uint32_t fail = 0;
 
     MaskedShakeCtx masked_shake_s_ctx;
@@ -137,10 +134,10 @@ uint32_t masked_MatrixVectorMulEncNTT_cmp(uint8_t ct0[SABER_POLYVECCOMPRESSEDBYT
             masked_shake_out,SABER_POLYCOINBYTES,SABER_POLYCOINBYTES,1);
       
         masked_cbd_seed(NSHARES,
-                    m_poly,SABER_N,1,
+                    &m_poly[0][0],SABER_N,1,
                     masked_shake_out,SABER_POLYCOINBYTES,1);
         
-        for(int d = 0; d<NSHARES; d++){
+        for(d = 0; d<NSHARES; d++){
           NTT_forward_32(s_NTT_32[d] + i * SABER_N, m_poly[d]);
           NTT_forward_16(s_NTT_16[d] + i * SABER_N, m_poly[d]);
         }
@@ -163,7 +160,7 @@ uint32_t masked_MatrixVectorMulEncNTT_cmp(uint8_t ct0[SABER_POLYVECCOMPRESSEDBYT
             NTT_forward_16(A_NTT_16, poly);
 
             // TODO
-            for(int d = 0; d<NSHARES; d++){
+            for(d = 0; d<NSHARES; d++){
               if (j == 0) {
                   NTT_mul_32(acc_NTT_32[d], A_NTT_32, s_NTT_32[d] + j * SABER_N);
                   NTT_mul_16(acc_NTT_16[d], A_NTT_16, s_NTT_16[d] + j * SABER_N);
@@ -174,7 +171,7 @@ uint32_t masked_MatrixVectorMulEncNTT_cmp(uint8_t ct0[SABER_POLYVECCOMPRESSEDBYT
             }
         }
 
-        for(int d = 0; d<NSHARES; d ++){
+        for(d = 0; d<NSHARES; d ++){
           NTT_inv_32(acc_NTT_32[d]);
           NTT_inv_16(acc_NTT_16[d]);
           solv_CRT(masked_acc[d], acc_NTT_32[d], acc_NTT_16[d]);
@@ -189,7 +186,7 @@ uint32_t masked_MatrixVectorMulEncNTT_cmp(uint8_t ct0[SABER_POLYVECCOMPRESSEDBYT
         for(j=0;j<SABER_N;j++){
           myref[j] = myref[j] % SABER_P;
         }
-        masked_poly_cmp(SABER_EQ-SABER_EP,SABER_EQ,SABER_EQ,rc,masked_acc,myref);
+        masked_poly_cmp(SABER_EQ-SABER_EP,SABER_EQ,SABER_EQ,rc,&masked_acc[0][0],myref);
     }
 
     shake128_inc_ctx_release(&shake_A_ctx);
@@ -201,7 +198,7 @@ uint32_t masked_MatrixVectorMulEncNTT_cmp(uint8_t ct0[SABER_POLYVECCOMPRESSEDBYT
         NTT_forward_32(A_NTT_32, poly);
         NTT_forward_16(A_NTT_16, poly);
 
-        for(int d =0; d<NSHARES; d++){
+        for(d =0; d<NSHARES; d++){
           if(j == 0){
               NTT_mul_32(acc_NTT_32[d], A_NTT_32, s_NTT_32[d] + j * SABER_N);
               NTT_mul_16(acc_NTT_16[d], A_NTT_16, s_NTT_16[d] + j * SABER_N);
@@ -212,7 +209,7 @@ uint32_t masked_MatrixVectorMulEncNTT_cmp(uint8_t ct0[SABER_POLYVECCOMPRESSEDBYT
         }
     }
 
-    for(int d = 0; d<NSHARES; d ++){
+    for(d = 0; d<NSHARES; d ++){
       NTT_inv_32(acc_NTT_32[d]);
       NTT_inv_16(acc_NTT_16[d]);
       solv_CRT(masked_acc[d], acc_NTT_32[d], acc_NTT_16[d]);
@@ -232,20 +229,22 @@ uint32_t masked_MatrixVectorMulEncNTT_cmp(uint8_t ct0[SABER_POLYVECCOMPRESSEDBYT
     for(j=0;j<SABER_N;j++){
         myref[j] = myref[j] % (1<<SABER_ET);
     }           
-    masked_poly_cmp(SABER_EP-SABER_ET,SABER_EP,SABER_EP,rc,masked_acc,myref);
+    masked_poly_cmp(SABER_EP-SABER_ET,SABER_EP,SABER_EP,rc,&masked_acc[0][0],myref);
  
     // finalize the comparison
     finalize_cmp(rc);
     fail = 0;
-    for(int d=0;d<NSHARES;d++){
+    for(d=0;d<NSHARES;d++){
       fail ^= rc[d];
     }
     return !fail;
 }
 
 
-void masked_poly_cmp(size_t b_start, size_t b_end, size_t coeffs_size, uint32_t *rc, const uint16_t *mp,
-                     int16_t *ref) {
+void masked_poly_cmp(size_t b_start, size_t b_end, size_t coeffs_size, uint32_t *rc, 
+            //TODO stride on mp
+            const uint16_t *mp,
+            uint16_t *ref) {
 
   size_t i, b;
   uint32_t bits[2* NSHARES * coeffs_size];
