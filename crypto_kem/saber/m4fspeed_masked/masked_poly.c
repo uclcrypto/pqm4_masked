@@ -29,7 +29,8 @@ static inline shake128incctx shake128_absorb_seed(const uint8_t seed[SABER_SEEDB
 }
 
 
-void masked_InnerProdDecNTT(uint8_t m[SABER_KEYBYTES], const uint8_t ciphertext[SABER_BYTES_CCA_DEC], const uint8_t sk[SABER_INDCPA_SECRETKEYBYTES]){
+void masked_InnerProdDecNTT(uint8_t m[SABER_KEYBYTES],
+    const uint8_t ciphertext[SABER_BYTES_CCA_DEC], const uint8_t sk[SABER_INDCPA_SECRETKEYBYTES]){
 
     // TODO Store the secret key masked.
     StrAPolyVec sk_masked;
@@ -102,12 +103,12 @@ void masked_InnerProdDecNTT(uint8_t m[SABER_KEYBYTES], const uint8_t ciphertext[
     POLmsg2BS(m, poly);
 }
 
-uint32_t masked_MatrixVectorMulEncNTT(uint8_t ct0[SABER_POLYVECCOMPRESSEDBYTES], 
+uint32_t masked_MatrixVectorMulEncNTT_cmp(uint8_t ct0[SABER_POLYVECCOMPRESSEDBYTES], 
                 uint8_t ct1[SABER_SCALEBYTES_KEM], 
-                const uint8_t seed_s[SABER_NOISE_SEEDBYTES], 
+                const uint8_t seed_s[SABER_NOISE_SEEDBYTES*NSHARES], 
                 const uint8_t seed_A[SABER_SEEDBYTES], 
                 const uint8_t pk[SABER_INDCPA_PUBLICKEYBYTES], 
-                const uint8_t m[SABER_KEYBYTES], int compare){
+                const uint8_t m[SABER_KEYBYTES]){
 
     uint32_t acc_NTT_32[NSHARES][SABER_N];
     uint32_t A_NTT_32[SABER_N];
@@ -199,16 +200,13 @@ uint32_t masked_MatrixVectorMulEncNTT(uint8_t ct0[SABER_POLYVECCOMPRESSEDBYTES],
         for (j = 0; j < SABER_N; j++) {
             masked_acc[0][j] = (masked_acc[0][j] + h1)%SABER_Q;
         }
-        
-        if (compare) {
-            BS2POLp(ct0 + i*SABER_POLYCOMPRESSEDBYTES,myref);
-            for(j=0;j<SABER_N;j++){
-              myref[j] = myref[j] % SABER_P;
-            }
-            masked_poly_cmp(SABER_EQ-SABER_EP,SABER_EQ,SABER_EQ,rc,masked_acc,myref);
-        } else {
-            // TODO
+       
+        // compare acc with ct0
+        BS2POLp(ct0 + i*SABER_POLYCOMPRESSEDBYTES,myref);
+        for(j=0;j<SABER_N;j++){
+          myref[j] = myref[j] % SABER_P;
         }
+        masked_poly_cmp(SABER_EQ-SABER_EP,SABER_EQ,SABER_EQ,rc,masked_acc,myref);
     }
 
     shake128_inc_ctx_release(&shake_A_ctx);
@@ -242,24 +240,21 @@ uint32_t masked_MatrixVectorMulEncNTT(uint8_t ct0[SABER_POLYVECCOMPRESSEDBYTES],
         // work in SABER_Q as for NTT. Could be done in SABER_P.
         masked_acc[0][j] = (masked_acc[0][j] - (mp[j] << (SABER_EP-1)) + h1)%SABER_Q;
     }
+
+    // compare acc with ct1
+    BS2POLT(ct1,myref);
+    for(j=0;j<SABER_N;j++){
+        myref[j] = myref[j] % (1<<SABER_ET);
+    }           
+    masked_poly_cmp(SABER_EP-SABER_ET,SABER_EP,SABER_EP,rc,masked_acc,myref);
  
-    if(compare){
-        BS2POLT(ct1,myref);
-        for(j=0;j<SABER_N;j++){
-            myref[j] = myref[j] % (1<<SABER_ET);
-        }           
-        masked_poly_cmp(SABER_EP-SABER_ET,SABER_EP,SABER_EP,rc,masked_acc,myref);
-    }else{
-      // TODO
-    }
-    
+    // finalize the comparison
     finalize_cmp(rc);
     fail = 0;
     for(int d=0;d<NSHARES;d++){
       fail ^= rc[d];
     }
     return !fail;
-
 }
 
 
