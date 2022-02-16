@@ -73,7 +73,7 @@ void masked_and(size_t nshares, uint32_t *z, size_t z_stride, const uint32_t *a,
 }
 
 /*************************************************
- * Name:        masked_and
+ * Name:        masked_xor
  *
  * Description: Performs masked XOR (z = a ^ b ) gate with nshares.
  *

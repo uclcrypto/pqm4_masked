@@ -36,6 +36,19 @@ static inline uint32_t pini_and_core(uint32_t a, uint32_t b, uint32_t r) {
   return s;
 }
 
+/*************************************************
+ * Name:        masked_and
+ *
+ * Description: Performs masked AND (z = a & b ) gate with nshares.
+ *
+ * Arguments:   - size_t nshares: number of shares
+ *            - uint32_t *z: output buffer
+ *            - size_t z_stride: output buffer stride
+ *            - uint32_t *a: first input buffer
+ *            - size_t a_stride: a buffer stride
+ *            - uint32_t *b: second input buffer
+ *            - size_t b_stride: b buffer stride
+ **************************************************/
 void masked_and(size_t nshares, uint32_t *z, size_t z_stride, const uint32_t *a,
                 size_t a_stride, const uint32_t *b, size_t b_stride) {
   uint32_t ztmp[nshares];
@@ -59,6 +72,19 @@ void masked_and(size_t nshares, uint32_t *z, size_t z_stride, const uint32_t *a,
   }
 }
 
+/*************************************************
+ * Name:        masked_xor
+ *
+ * Description: Performs masked XOR (z = a ^ b ) gate with nshares.
+ *
+ * Arguments:   - size_t nshares: number of shares
+ *            - uint32_t *z: output buffer
+ *            - size_t z_stride: output buffer stride
+ *            - uint32_t *a: first input buffer
+ *            - size_t a_stride: a buffer stride
+ *            - uint32_t *b: second input buffer
+ *            - size_t b_stride: b buffer stride
+ **************************************************/
 void masked_xor(size_t nshares, uint32_t *out, size_t out_stride,
                 const uint32_t *ina, size_t ina_stride, const uint32_t *inb,
                 size_t inb_stride) {
@@ -67,6 +93,16 @@ void masked_xor(size_t nshares, uint32_t *out, size_t out_stride,
   }
 }
 
+/*************************************************
+ * Name:        unmask_boolean
+ *
+ * Description: Unmask sharing by XORing all the shares
+ *
+ * Arguments: - size_t nshares: number of shares
+ *            - uint32_t *in: input buffer
+ *            - size_t in_stride: in buffer stride
+ * Returns:   - uint32_t out: masked value
+ **************************************************/
 uint32_t unmask_boolean(size_t nshares, const uint32_t *in, size_t in_stride) {
   uint32_t out, d;
   out = 0;
@@ -76,6 +112,17 @@ uint32_t unmask_boolean(size_t nshares, const uint32_t *in, size_t in_stride) {
   return out;
 }
 
+/*************************************************
+ * Name:        copy_sharing
+ *
+ * Description: Copy input sharing to output sharing 
+ *
+ * Arguments: - size_t nshares: number of shares
+ *            - uint32_t *out: output buffer
+ *            - size_t out_stride: out buffer stride
+ *            - uint32_t *in: input buffer
+ *            - size_t in_stride: in buffer stride
+ **************************************************/
 void copy_sharing(size_t nshares, uint32_t *out, size_t out_stride,
                   const uint32_t *in, size_t in_stride) {
   for (size_t i = 0; i < nshares; i++) {
@@ -83,6 +130,26 @@ void copy_sharing(size_t nshares, uint32_t *out, size_t out_stride,
   }
 }
 
+/*************************************************
+ * Name:        secadd
+ *
+ * Description: Performs masked addition of two bitslice words. 
+ *              out = (in1 + in2)%(2**kbits_out) 
+ *
+ * Arguments: - size_t nshares: number of shares
+ *            - size_t kbits: number of bits in input words
+ *            - size_t kbits_out: number of bits in the output word.
+ *                kbits = kbits_out or kbits = kbits_out - 1
+ *            - uint32_t *out: output buffer
+ *            - size_t out_msk_stride: stride between shares
+ *            - size_t out_data_stride: stride between masked bits
+ *            - uint32_t *in1: first input buffer
+ *            - size_t in1_msk_stride: stride between shares
+ *            - size_t in1_data_stride: stride between masked bits
+ *            - uint32_t *in2: second input buffer
+ *            - size_t in2_msk_stride: stride between shares
+ *            - size_t in2_data_stride: stride between masked bits
+ **************************************************/
 void secadd(size_t nshares, size_t kbits, size_t kbits_out, uint32_t *out,
             size_t out_msk_stride, size_t out_data_stride, const uint32_t *in1,
             size_t in1_msk_stride, size_t in1_data_stride, const uint32_t *in2,
@@ -135,169 +202,22 @@ void secadd(size_t nshares, size_t kbits, size_t kbits_out, uint32_t *out,
   }
 }
 
-void secadd_constant_bmsk(size_t nshares, size_t kbits, size_t kbits_out,
-                          uint32_t *out, size_t out_msk_stride,
-                          size_t out_data_stride, const uint32_t *in1,
-                          size_t in1_msk_stride, size_t in1_data_stride,
-                          uint32_t constant, const uint32_t *bmsk,
-                          size_t bmsk_msk_stride) {
-
-  size_t i, d;
-  uint32_t carry[nshares];
-  uint32_t xpy[nshares];
-  uint32_t xpc[nshares];
-
-  if (constant & 0x1) {
-    masked_and(nshares, carry, 1, &in1[0 * in1_data_stride], in1_msk_stride,
-               bmsk, bmsk_msk_stride);
-    masked_xor(nshares, &out[0 * out_data_stride], out_msk_stride,
-               &in1[0 * in1_data_stride], in1_msk_stride, bmsk,
-               bmsk_msk_stride);
-  } else {
-    for (d = 0; d < nshares; d++) {
-      carry[d] = 0;
-    }
-    copy_sharing(nshares, out, out_msk_stride, in1, in1_msk_stride);
-  }
-  for (i = 1; i < kbits; i++) {
-    // xpy = in2 ^ in1
-    // xpc = in1 ^ carry
-    // out = xpy ^ carry
-    if ((constant >> i) & 0x1) {
-      for (d = 0; d < nshares; d++) {
-        xpy[d] = in1[i * in1_data_stride + d * in1_msk_stride] ^
-                 bmsk[d * bmsk_msk_stride];
-        xpc[d] = in1[i * in1_data_stride + d * in1_msk_stride] ^ carry[d];
-        out[i * out_data_stride + d * out_msk_stride] = xpy[d] ^ carry[d];
-      }
-
-      if ((i == (kbits - 1)) && (i == (kbits_out - 1))) {
-        return;
-      } else if (i == (kbits - 1)) {
-        masked_and(nshares, carry, 1, xpy, 1, xpc, 1);
-        masked_xor(nshares, &out[(kbits)*out_data_stride], out_msk_stride,
-                   carry, 1, &in1[i * in1_data_stride], in1_msk_stride);
-        return;
-      }
-
-      masked_and(nshares, carry, 1, xpy, 1, xpc, 1);
-      masked_xor(nshares, carry, 1, carry, 1, &in1[i * in1_data_stride],
-                 in1_msk_stride);
-    } else {
-      // compute the carry
-      masked_xor(nshares, &out[i * out_data_stride], out_msk_stride, carry, 1,
-                 &in1[i * in1_data_stride], 1);
-
-      if ((i == (kbits - 1)) && (i == (kbits_out - 1))) {
-        return;
-      } else if (i == (kbits - 1)) {
-        masked_and(nshares, &out[(kbits)*out_data_stride], out_msk_stride,
-                   carry, 1, &in1[i * in1_data_stride], in1_msk_stride);
-        return;
-      }
-      masked_and(nshares, carry, 1, carry, 1, &in1[i * in1_data_stride],
-                 in1_msk_stride);
-    }
-  }
-}
-
-void secadd_constant(size_t nshares, size_t kbits, size_t kbits_out,
-                     uint32_t *out, size_t out_msk_stride,
-                     size_t out_data_stride, const uint32_t *in1,
-                     size_t in1_msk_stride, size_t in1_data_stride,
-                     uint32_t constant) {
-
-  size_t i, d;
-  uint32_t carry[nshares];
-  uint32_t xpy[nshares];
-  uint32_t xpc[nshares];
-
-  if (constant & 0x1) {
-    for (d = 0; d < nshares; d++) {
-      carry[d] = in1[d * in1_msk_stride];
-    }
-    copy_sharing(nshares, out, out_msk_stride, in1, in1_msk_stride);
-    out[0] ^= 0xFFFFFFFF;
-  } else {
-    for (d = 0; d < nshares; d++) {
-      carry[d] = 0;
-    }
-    copy_sharing(nshares, out, out_msk_stride, in1, in1_msk_stride);
-  }
-
-  for (i = 1; i < kbits; i++) {
-    if ((constant >> i) & 0x1) {
-      for (d = 0; d < nshares; d++) {
-        xpy[d] = in1[i * in1_data_stride + d * in1_msk_stride];
-        xpc[d] = in1[i * in1_data_stride + d * in1_msk_stride] ^ carry[d];
-        out[i * out_data_stride + d * out_msk_stride] = xpy[d] ^ carry[d];
-      }
-      xpy[0] ^= 0xFFFFFFFF;
-      out[i * out_data_stride] ^= 0xFFFFFFFF;
-
-      if ((i == (kbits - 1)) && (i == (kbits_out - 1))) {
-        return;
-      } else if (i == (kbits - 1)) {
-        masked_and(nshares, carry, 1, xpy, 1, xpc, 1);
-        masked_xor(nshares, &out[(kbits)*out_data_stride], out_msk_stride,
-                   carry, 1, &in1[i * in1_data_stride], in1_msk_stride);
-
-        // add the kbits_out of the constant
-        out[(kbits)*out_data_stride] ^=
-            0xFFFFFFFF * ((constant >> kbits) & 0x1);
-
-        return;
-      }
-
-      masked_and(nshares, carry, 1, xpy, 1, xpc, 1);
-      masked_xor(nshares, carry, 1, carry, 1, &in1[i * in1_data_stride],
-                 in1_msk_stride);
-    } else {
-      // compute the carry
-      masked_xor(nshares, &out[i * out_data_stride], out_msk_stride, carry, 1,
-                 &in1[i * in1_data_stride], 1);
-
-      if ((i == (kbits - 1)) && (i == (kbits_out - 1))) {
-        return;
-      } else if (i == (kbits - 1)) {
-        masked_and(nshares, &out[(kbits)*out_data_stride], out_msk_stride,
-                   carry, 1, &in1[i * in1_data_stride], in1_msk_stride);
-
-        // add the kbits_out of the constant
-        out[(kbits)*out_data_stride] ^=
-            0xFFFFFFFF * ((constant >> kbits) & 0x1);
-        return;
-      }
-      masked_and(nshares, carry, 1, carry, 1, &in1[i * in1_data_stride],
-                 in1_msk_stride);
-    }
-  }
-}
-
-void secadd_modp(size_t nshares, size_t kbits, uint32_t q, uint32_t *out,
-                 size_t out_msk_stride, size_t out_data_stride,
-                 const uint32_t *in1, size_t in1_msk_stride,
-                 size_t in1_data_stride, const uint32_t *in2,
-                 size_t in2_msk_stride, size_t in2_data_stride) {
-
-  uint32_t s[(kbits + 1) * nshares];
-  uint32_t sp[(kbits + 1) * nshares];
-
-  secadd(nshares, kbits, kbits + 1, s, 1, nshares, in1, in1_msk_stride,
-         in1_data_stride, in2, in2_msk_stride, in2_data_stride);
-
-  secadd_constant(nshares, kbits + 1, kbits + 1, sp, 1, nshares, s, 1, nshares,
-                  (1 << (kbits + 1)) - q);
-
-  secadd_constant_bmsk(nshares, kbits, kbits, out, out_msk_stride,
-                       out_data_stride, sp, 1, nshares, q, &sp[kbits * nshares],
-                       1);
-}
-
+/*************************************************
+ * Name:        seca2b
+ *
+ * Description: Inplace arithmetic to boolean masking conversion:
+ *            sum(in_i)%(2**kbits) = XOR(in_i) 
+ *
+ * Arguments: - size_t nshares: number of shares
+ *            - size_t kbits: number of bits in input words. Arithmetic
+ *            masking is on 2**kbits.
+ *            - uint32_t *in: input buffer
+ *            - size_t in_msk_stride: stride between shares
+ *            - size_t in_data_stride: stride between masked bits
+ **************************************************/
 void seca2b(size_t nshares, size_t kbits, uint32_t *in, size_t in_msk_stride,
             size_t in_data_stride) {
 
-  // TODO optimize inplace ?
   if (nshares == NSHARES)
     start_bench(my_seca2b);
 
@@ -337,56 +257,23 @@ void seca2b(size_t nshares, size_t kbits, uint32_t *in, size_t in_msk_stride,
     stop_bench(my_seca2b);
 }
 
-void seca2b_modp(size_t nshares, size_t kbits, uint32_t p, uint32_t *in,
-                 size_t in_msk_stride, size_t in_data_stride) {
 
-  size_t i, d;
-  if (nshares == NSHARES)
-    start_bench(my_seca2b_modp);
-
-  if (nshares == 1) {
-    return;
-  }
-
-  size_t nshares_low = nshares / 2;
-  size_t nshares_high = nshares - nshares_low;
-
-  seca2b_modp(nshares_low, kbits, p, in, in_msk_stride, in_data_stride);
-  seca2b_modp(nshares_high, kbits, p, &in[nshares_low * in_msk_stride],
-              in_msk_stride, in_data_stride);
-
-  uint32_t expanded_low[(kbits + 1) * nshares];
-  uint32_t expanded_high[(kbits + 1) * nshares];
-  uint32_t u[(kbits + 1) * nshares];
-
-  secadd_constant(nshares_low, kbits, kbits + 1, expanded_low, 1, nshares, in,
-                  in_msk_stride, in_data_stride, (1 << (kbits + 1)) - p);
-
-  for (i = 0; i < (kbits + 1); i++) {
-    for (d = 0; d < nshares_low; d++) {
-      // has already been written by secadd_constant_bmsk
-      // expanded_low[i*nshares + d] = in[i*in_data_stride + d*in_msk_stride];
-      expanded_high[i * nshares + d] = 0;
-    }
-    for (d = nshares_low; d < nshares; d++) {
-      // kbits + 1 within in is unset
-      expanded_high[i * nshares + d] =
-          (i < (kbits)) ? in[i * in_data_stride + d * in_msk_stride] : 0;
-      expanded_low[i * nshares + d] = 0;
-    }
-  }
-
-  secadd(nshares, kbits + 1, kbits + 1, u, 1, nshares, expanded_high, 1,
-         nshares, expanded_low, 1, nshares);
-
-  secadd_constant_bmsk(nshares, kbits, kbits, in, in_msk_stride, in_data_stride,
-                       u, 1, nshares, p, &u[kbits * nshares], 1);
-
-  if (nshares == NSHARES)
-    stop_bench(my_seca2b_modp);
-}
-
-// operates on 64 words the time
+/*************************************************
+ * Name:        secb2a
+ *
+ * Description: Inplace boolean to arithmetic masking conversion:
+ *            sum(in_i)%((1<<kbits)) = XOR(in_i) 
+ *
+ * /!\ This function is operating on two slices such that 64 conversions are
+ * performed in parallel.
+ *
+ * Arguments: - size_t nshares: number of shares
+ *            - size_t kbits: number of bits in input words. kbits < 16
+ *            - uint32_t p: modulus of the arithmetic masking
+ *            - uint32_t *in: input buffer
+ *            - size_t in_msk_stride: stride between shares
+ *            - size_t in_data_stride: stride between masked bits
+ **************************************************/
 void secb2a(size_t nshares,
             size_t kbits, // MUST BE EQUAL TO COEF_NBITS
             uint32_t *in, size_t in_msk_stride, size_t in_data_stride) {
@@ -452,8 +339,8 @@ void secb2a(size_t nshares,
 
   // unmask b_str and set to the last share of the output
   for (i = 0; i < kbits; i++) {
-    RefreshIOS_rec(&b_str[i * nshares], nshares);
-    RefreshIOS_rec(&b_str[i * nshares + kbits * nshares], nshares);
+    RefreshIOS_rec(nshares,nshares,&b_str[i * nshares], 1);
+    RefreshIOS_rec(nshares,nshares,&b_str[i * nshares + kbits * nshares],1);
 
     in[i * in_data_stride + (nshares - 1) * in_msk_stride] = 0;
     in[i * in_data_stride + (nshares - 1) * in_msk_stride + kbits * nshares] =
@@ -467,71 +354,53 @@ void secb2a(size_t nshares,
   }
 }
 
-void RefreshIOS_rec(uint32_t *x, uint32_t d) {
+/*************************************************
+ * Name:        RefreshIOS_rec
+ *
+ * Description: IOS refresh on boolean sharing 
+ * 
+ * Arguments: - size_t nshares: number of shares
+ *            - size_t d: current recursion shars:
+ *            - uint32_t *x: input buffer
+ *            - size_t x_msk_stride: stride between shares
+ **************************************************/
+void RefreshIOS_rec(size_t nshares, size_t d,
+    uint32_t *x, size_t x_msk_stride) {
   uint32_t r;
   if (d == 1) {
   } else if (d == 2) {
-    r = rand32();
-    x[0] ^= r;
-    x[1] ^= r;
+    r = get_random();
+    x[0*x_msk_stride] ^= r;
+    x[1*x_msk_stride] ^= r;
   } else {
-    RefreshIOS_rec(x, d / 2);
-    RefreshIOS_rec(x + d / 2, d - d / 2);
+    RefreshIOS_rec(nshares, d / 2, x, x_msk_stride);
+    RefreshIOS_rec(nshares, d - d / 2, &x[(d / 2)*x_msk_stride], x_msk_stride);
     for (unsigned int i = 0; i < d / 2; i++) {
       r = rand32();
-      x[i] ^= r;
-      x[i + d / 2] ^= r;
+      x[i * x_msk_stride] ^= r;
+      x[(i + d / 2) * x_msk_stride] ^= r;
     }
   }
 }
 
-void seccompress(size_t nshares, size_t ncoeffs, uint32_t q, uint32_t c,
-                 uint32_t *out, size_t out_msk_stride, size_t out_data_stride,
-                 const uint16_t *in, size_t in_msk_stride,
-                 size_t in_data_stride) {
-
-  size_t i, d;
-  uint32_t ell = 0;
-  uint32_t prod = q * nshares;
-  while (prod > 0) {
-    prod = prod >> 1;
-    ell++;
-  }
-
-  uint32_t in_expanded[ncoeffs * nshares];
-  uint32_t bs_expanded[(ell + c) * nshares];
-
-  // map mod q to mod 2^ell.
-  uint32_t tmp32;
-  uint64_t tmp64;
-  for (i = 0; i < ncoeffs; i++) {
-    tmp64 = (in[i * in_data_stride] + q) % q;
-    tmp32 = ((((tmp64 << (c + ell + 1)) + q) >> 1) / (q));
-    tmp32 += (1 << (ell - 1));
-    in_expanded[i * nshares] = tmp32 & ((1 << (ell + c)) - 1);
-    for (d = 1; d < nshares; d++) {
-      tmp64 = (q + in[i * in_data_stride + d * in_msk_stride]) % q;
-      tmp32 = ((((tmp64 << (c + ell + 1)) + q) >> 1) / (q));
-      in_expanded[i * nshares + d] = tmp32 & ((1 << (ell + c)) - 1);
-    }
-  }
-
-  // map to bitslice
-  masked_dense2bitslice_opt_u32(NSHARES, ell + c, bs_expanded, 1, NSHARES,
-                                in_expanded, 1, NSHARES);
-
-  // convert A2B
-  seca2b(NSHARES, ell + c, bs_expanded, 1, NSHARES);
-
-  // map to the output
-  for (i = 0; i < c; i++) {
-    for (d = 0; d < nshares; d++) {
-      out[i * out_data_stride + d * out_msk_stride] =
-          bs_expanded[(ell + i) * nshares + d];
-    }
-  }
-}
-
+/*************************************************
+ * Name:        secfulladd
+ *
+ * Description: Performs a 3-bit full adder. See for details: 
+ *              https://eprint.iacr.org/2022/158.pdf, Algo 5.
+ *
+ * Arguments: - size_t nshares: number of shares
+ *            - uint32_t *co: carry out buffer
+ *            - size_t co_msk_stride: carry out shares stride
+ *            - uint32_t *w: output bit
+ *            - size_t w_msk_stride: w shares stride
+ *            - uint32_t *ci: carry in buffer
+ *            - size_t ci_msk_stride: carry in shares stride
+ *            - uint32_t *x: first input bit
+ *            - size_t x_msk_stride: x shares stride
+ *            - uint32_t *y: second input bit
+ *            - size_t y_msk_stride: y shares stride
+ **************************************************/
 void secfulladd(size_t nshares, uint32_t *co, size_t co_msk_stride, uint32_t *w,
                 size_t w_msk_stide, uint32_t *ci, size_t ci_msk_stride,
                 uint32_t *x, size_t x_msk_stride, uint32_t *y,
@@ -557,6 +426,28 @@ void secfulladd(size_t nshares, uint32_t *co, size_t co_msk_stride, uint32_t *w,
   }
 }
 
+/*************************************************
+ * Name:        masked_cbd
+ *
+ * Description: Computes central binomial distribution.
+ *              z = (HW(a) - HW(b))%(1<<kbits). Output is an arithmetic masking
+ *              https://eprint.iacr.org/2022/158.pdf, Algo 6.
+ *
+ * /!\ operates on 64 coefficients at the time.
+ *
+ * Arguments: - size_t nshares: number of shares
+ *            - size_t eta: number of bits in a and b
+ *            - size_t kbits: number of bits in modulus
+ *            - int16_t *z: output central binomial distribution
+ *            - size_t z_msk_stride: z shares stride
+ *            - size_t z_data_stride: z data stride
+ *            - uint32_t *a: input uniform bits 
+ *            - size_t a_msk_stride: a shares stride
+ *            - size_t a_data_stride: a data stride
+ *            - uint32_t *b: input uniform bits 
+ *            - size_t b_msk_stride: b shares stride
+ *            - size_t b_data_stride: b data stride
+ **************************************************/
 void masked_cbd(size_t nshares, size_t eta, size_t kbits, uint16_t *z,
                 size_t z_msk_stride, size_t z_data_stride, uint32_t *a,
                 size_t a_msk_stride, size_t a_data_stride, uint32_t *b,
