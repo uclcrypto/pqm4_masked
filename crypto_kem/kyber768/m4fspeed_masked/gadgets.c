@@ -449,7 +449,8 @@ void seca2b(size_t nshares, size_t kbits, uint32_t *in, size_t in_msk_stride,
   size_t nshares_high = nshares - nshares_low;
 
   seca2b(nshares_low, kbits, in, in_msk_stride, in_data_stride);
-  seca2b(nshares_high, kbits, &in[nshares_low*in_msk_stride], in_msk_stride, in_data_stride);
+  seca2b(nshares_high, kbits, &in[nshares_low * in_msk_stride], 
+          in_msk_stride, in_data_stride);
 
   uint32_t expanded_low[kbits * nshares];
   uint32_t expanded_high[kbits * nshares];
@@ -502,8 +503,8 @@ void seca2b_modp(size_t nshares, size_t kbits, uint32_t p, uint32_t *in,
   size_t nshares_high = nshares - nshares_low;
 
   seca2b_modp(nshares_low, kbits, p, in, in_msk_stride, in_data_stride);
-  seca2b_modp(nshares_high, kbits, p, &in[nshares_low*in_msk_stride], in_msk_stride,
-              in_data_stride);
+  seca2b_modp(nshares_high, kbits, p, &in[nshares_low * in_msk_stride], 
+              in_msk_stride, in_data_stride);
 
   uint32_t expanded_low[(kbits + 1) * nshares];
   uint32_t expanded_high[(kbits + 1) * nshares];
@@ -714,11 +715,11 @@ void seccompress(size_t nshares, uint32_t q, uint32_t c,
   }
 
   // map to bitslice
-  masked_dense2bitslice_opt_u32(NSHARES, ell + c, bs_expanded, 1, NSHARES,
-                            in_expanded, 1, NSHARES);
+  masked_dense2bitslice_opt_u32(nshares, ell + c, bs_expanded, 1, nshares,
+                            in_expanded, 1, nshares);
   
   // convert A2B
-  seca2b(NSHARES, ell + c, bs_expanded, 1, NSHARES);
+  seca2b(nshares, ell + c, bs_expanded, 1, nshares);
 
   // map to the output
   for (i = 0; i < c; i++) {
