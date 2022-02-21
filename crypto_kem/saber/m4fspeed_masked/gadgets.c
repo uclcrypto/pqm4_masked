@@ -275,7 +275,7 @@ void seca2b(size_t nshares, size_t kbits, uint32_t *in, size_t in_msk_stride,
  *            - size_t in_data_stride: stride between masked bits
  **************************************************/
 void secb2a(size_t nshares,
-            size_t kbits, // MUST BE EQUAL TO COEF_NBITS
+            size_t kbits,
             uint32_t *in, size_t in_msk_stride, size_t in_data_stride) {
 
   uint16_t z_dense[2 * BSSIZE * nshares];

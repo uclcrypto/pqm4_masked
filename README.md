@@ -30,6 +30,8 @@ API](https://github.com/PQClean/PQClean).
 
 **/!\\As a result, the secret key is stored unmasked, which is insecure./!\\**
 
+**/!\\The epheremal (encapsulated) is also unprotected similarly as [this paper](https://tches.iacr.org/index.php/TCHES/article/view/9064)./!\\**
+
 
 ## Running tests and benchmarks
 
@@ -45,9 +47,32 @@ Before running any code, run `cd libopencm3; make; cd ..`, otherwise the scripts
 # Testvectors
 CFLAGS="-DNSHARES=2" python3 testvectors.py -p nucleo-l4r5zi --uart /dev/ttyACM0 kyber768/m4fspeed_masked
 # Benchmark whole
-CFLAGS="-DNSHARES=2 -DBENCH=1" python3 benchmarks.py -p nucleo-l4r5zi --uart /dev/ttyACM0 kyber768/m4fspeed_masked --speed
+CFLAGS="-DNSHARES=2 -DBENCH=0" python3 benchmarks.py -p nucleo-l4r5zi --uart /dev/ttyACM0 kyber768/m4fspeed_masked --speed
 # Benchmark components
 CFLAGS="-DNSHARES=2 -DBENCH=1" python3 benchmarks.py -p nucleo-l4r5zi --uart /dev/ttyACM0 kyber768/m4fspeed_masked --subspeed
+```
+
+### Benchmarks
+In order to benchmark a specific function `my_function`, you should first edit `BENCH_CASES` in `common/bench.h` such that:
+
+```c
+#define BENCH_CASES X(my_function) X(my_other_function)
+```
+
+Then you can increase the performance counter of that specific function within the source files with:
+```c 
+start_bench(my_function);
+my_function(...);
+stop_bench(my_function);
+```
+See also `common/bench.c` and `common/speed_sub.c` for additional details about the benchmarking procedure. 
+
+Note that the benchmark configurations is done through `CFLAGS`. To run them, the flag `BENCH=1` must be defined. In order to benchmark randomness usage instead of cycle count, `BENCH_RND=1` must be defined.
+In order to run all benchmarks for `saber` or `kyber768`, run:
+
+```shell
+./run_bench.sh kyber768 
+python3 parse_bench.py kyber768
 ```
 
 

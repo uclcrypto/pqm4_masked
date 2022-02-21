@@ -39,7 +39,6 @@ extern void __asm_poly_add_32(uint32_t *des, uint32_t *src1, uint32_t *src2);
 
 static inline shake128incctx
 shake128_absorb_seed(const uint8_t seed[SABER_SEEDBYTES]) {
-
   shake128incctx ctx;
   shake128_inc_init(&ctx);
   shake128_inc_absorb(&ctx, seed, SABER_SEEDBYTES);
@@ -69,7 +68,7 @@ void masked_InnerProdDecNTT(uint8_t *m, size_t m_msk_stide,
   uint16_t c_NTT_16[SABER_L][SABER_N];
   StrAPoly m_poly;
   uint16_t cm[SABER_N];
-  uint32_t masked_bs[NSHARES * SABER_EP * 2];
+  uint32_t masked_bs[NSHARES * SABER_EP * 2]; // TODO
   size_t i, j, b;
 
   // decompress and NTT public ciphertext.
@@ -112,7 +111,7 @@ void masked_InnerProdDecNTT(uint8_t *m, size_t m_msk_stide,
   BS2POLT(ciphertext + SABER_POLYVECCOMPRESSEDBYTES, cm);
   for (i = 0; i < SABER_N; i++) {
     m_poly[0][i] =
-        (SABER_P + m_poly[0][i] + h2 - (cm[i] << (SABER_EP - SABER_ET))) %
+        (SABER_P + m_poly[0][i] + h2 - (cm[i] << (SABER_EP - SABER_ET))) & ((1<<SABER_EP)-1);
         SABER_P;
   }
 
@@ -183,12 +182,13 @@ uint32_t masked_MatrixVectorMulEncNTT_cmp(
   size_t i, j, d;
 
   // comparison flags
-  uint32_t fail = 0;
-  uint32_t masked_fail[NSHARES];
-  memset(masked_fail, 0, sizeof(masked_fail));
-  masked_fail[0] = 0xFFFFFFFF;
+  uint32_t correct = 0;
+  uint32_t masked_correct[NSHARES];
+  memset(masked_correct, 0, sizeof(masked_correct));
+  masked_correct[0] = 0xFFFFFFFF;
 
   MaskedShakeCtx masked_shake_s_ctx;
+
   masked_shake128_inc_init(&masked_shake_s_ctx, seed_s, SABER_SEEDBYTES,
                            seed_s_msk_stride, seed_s_data_stride);
 
@@ -255,7 +255,7 @@ uint32_t masked_MatrixVectorMulEncNTT_cmp(
     for (j = 0; j < SABER_N; j++) {
       myref[j] = myref[j] % SABER_P;
     }
-    masked_poly_cmp(SABER_EQ - SABER_EP, SABER_EQ, SABER_EQ, masked_fail,
+    masked_poly_cmp(SABER_EQ - SABER_EP, SABER_EQ, SABER_EQ, masked_correct,
                     &masked_acc[0][0], SABER_N, 1, myref);
   }
 
@@ -309,16 +309,16 @@ uint32_t masked_MatrixVectorMulEncNTT_cmp(
   for (j = 0; j < SABER_N; j++) {
     myref[j] = myref[j] % (1 << SABER_ET);
   }
-  masked_poly_cmp(SABER_EP - SABER_ET, SABER_EP, SABER_EP, masked_fail,
+  masked_poly_cmp(SABER_EP - SABER_ET, SABER_EP, SABER_EP, masked_correct,
                   &masked_acc[0][0], SABER_N, 1, myref);
 
   // finalize the comparison
-  finalize_cmp(masked_fail);
-  fail = 0;
+  finalize_cmp(masked_correct);
+  correct = 0;
   for (d = 0; d < NSHARES; d++) {
-    fail ^= masked_fail[d];
+    correct ^= masked_correct[d];
   }
-  return !fail;
+  return !correct;
 }
 
 /*************************************************
@@ -360,11 +360,10 @@ void masked_poly_cmp(size_t b_start, size_t b_end, size_t coeffs_size,
     for (b = 0; b < b_end - b_start; b++) {
 
       // public polynomial and public one
-      bits[(b + b_start) * NSHARES] ^= bits_ref[b] ^ 0xFFFFFFFF;
+      bits[(b + b_start) * NSHARES] ^= ~bits_ref[b];
       masked_and(NSHARES, rc, 1, rc, 1, &bits[(b + b_start) * NSHARES], 1);
 
-      bits[(b + b_start + coeffs_size) * NSHARES] ^=
-          bits_ref[b + coeffs_size] ^ 0xFFFFFFFF;
+      bits[(b + b_start + coeffs_size) * NSHARES] ^= ~bits_ref[b + coeffs_size];
       masked_and(NSHARES, rc, 1, rc, 1,
                  &bits[(b + b_start + coeffs_size) * NSHARES], 1);
     }
