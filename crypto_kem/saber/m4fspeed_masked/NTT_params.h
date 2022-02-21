@@ -1,3 +1,16 @@
+/* Written in 2021-2022 by Amin Abdulrahman and Jiun-Peng Chen and Yu-Jia Chen
+ * Vincent Hwang and Matthias J. Kannwischer and Bo-Yin Yang and  UCLouvain 
+ * 
+ *  To the extent possible under law, the author(s) have dedicated all
+ *  copyright and related and neighboring rights to this software to the
+ *  public domain worldwide. This software is distributed without any
+ *  warranty.
+ *  You should have received a copy of the CC0 Public Domain Dedication along
+ *  with this software. If not, see
+ *  <http://creativecommons.org/publicdomain/zero/1.0/>. 
+ *  see https://github.com/multi-moduli-ntt-saber/multi-moduli-ntt-saber
+ */
+
 #ifndef NTT_PARAMS_H
 #define NTT_PARAMS_H
 
