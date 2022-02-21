@@ -173,10 +173,18 @@ void masked_poly_tomsg(unsigned char *m, StrAPoly str_r) {
   stop_bench(my_tomsg);
 }
 
-// C -> compression factor
-// rc -> check state
-// mp -> masked polynoamil
-// ref -> unmasked polynomial
+/*************************************************
+ * Name:       masked_poly_cmp 
+ *
+ * Description: Compares masked polynomial with reference polynomial 
+ *
+ * Arguments: - size_t c compression factor
+ *            - uint32_t *rc: check bits array. Must be set to 0xFFFFFFFF if
+ *              all the bits in two polynomials are equal.
+ *            - StrAPoly mp: masked polynomial 
+ *            - poly *ref: reference polynomial
+ **************************************************/
+
 void masked_poly_cmp(size_t c, uint32_t *rc, const StrAPoly mp,
                      const poly *ref) {
 
@@ -209,35 +217,24 @@ void masked_poly_cmp(size_t c, uint32_t *rc, const StrAPoly mp,
   }
   stop_bench(my_masked_poly_cmp);
 }
+
+/*************************************************
+ * Name:       finalize 
+ *
+ * Description: inplace ANDs all the 32-bits within bits 
+ *
+ * Arguments: - uint32_t *bits: bits to ANDs 
+ * **************************************************/
 void finalize_cmp(uint32_t *bits) {
   start_bench(my_cmp_finalize);
   uint32_t other[NSHARES];
-  int d;
-  for (d = 0; d < NSHARES; d++) {
-    other[d] = bits[d] >> 16;
+  int d, shift;
+  for(shift = 16; shift > 0; shift = shift >> 1){
+    for (d = 0; d < NSHARES; d++) {
+      other[d] = bits[d] >> shift;
+    }
+    masked_and(NSHARES, bits, 1, bits, 1, other, 1);
   }
-  masked_and(NSHARES, bits, 1, bits, 1, other, 1);
-
-  for (d = 0; d < NSHARES; d++) {
-    other[d] = bits[d] >> 8;
-  }
-  masked_and(NSHARES, bits, 1, bits, 1, other, 1);
-
-  for (d = 0; d < NSHARES; d++) {
-    other[d] = bits[d] >> 4;
-  }
-  masked_and(NSHARES, bits, 1, bits, 1, other, 1);
-
-  for (d = 0; d < NSHARES; d++) {
-    other[d] = bits[d] >> 2;
-  }
-  masked_and(NSHARES, bits, 1, bits, 1, other, 1);
-
-  for (d = 0; d < NSHARES; d++) {
-    other[d] = bits[d] >> 1;
-  }
-  masked_and(NSHARES, bits, 1, bits, 1, other, 1);
-
   stop_bench(my_cmp_finalize);
 }
 
