@@ -68,7 +68,7 @@ void masked_InnerProdDecNTT(uint8_t *m, size_t m_msk_stide,
   uint16_t c_NTT_16[SABER_L][SABER_N];
   StrAPoly m_poly;
   uint16_t cm[SABER_N];
-  uint32_t masked_bs[NSHARES * SABER_EP * 2]; // TODO
+  uint32_t masked_bs[SABER_EP * 2][NSHARES]; // TODO
   size_t i, j, b;
 
   // decompress and NTT public ciphertext.
@@ -116,12 +116,12 @@ void masked_InnerProdDecNTT(uint8_t *m, size_t m_msk_stide,
 
   // compression of mpoly
   for (i = 0; i < SABER_N; i += 2 * BSSIZE) {
-    masked_dense2bitslice_opt(NSHARES, SABER_EP, masked_bs, 1, NSHARES,
+    masked_dense2bitslice_opt(NSHARES, SABER_EP, masked_bs[0], 1, NSHARES,
                               &m_poly[0][i], SABER_N, 1);
-    seca2b(NSHARES, SABER_EP, masked_bs, 1, NSHARES);
-    seca2b(NSHARES, SABER_EP, &masked_bs[NSHARES * SABER_EP], 1, NSHARES);
+    seca2b(NSHARES, SABER_EP, masked_bs[0], 1, NSHARES);
+    seca2b(NSHARES, SABER_EP, masked_bs[SABER_EP], 1, NSHARES);
     masked_bitslice2dense_opt(NSHARES, 1, &m_poly[0][i], SABER_N, 1,
-                              &masked_bs[(SABER_EP - 1) * NSHARES], 1,
+                              masked_bs[SABER_EP - 1], 1,
                               NSHARES * SABER_EP);
   }
 
