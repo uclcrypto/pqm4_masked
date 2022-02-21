@@ -30,8 +30,7 @@ API](https://github.com/PQClean/PQClean).
 
 **/!\\As a result, the secret key is stored unmasked, which is insecure./!\\**
 
-**/!\\The epheremal (encapsulated) is also unprotected similarly as [this paper](https://tches.iacr.org/index.php/TCHES/article/view/9064)./!\\**
-
+**/!\\The epheremal (encapsulated) key is also unprotected similarly as [this paper](https://tches.iacr.org/index.php/TCHES/article/view/9064)./!\\**
 
 ## Running tests and benchmarks
 

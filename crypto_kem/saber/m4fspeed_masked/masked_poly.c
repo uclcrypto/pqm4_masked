@@ -112,7 +112,6 @@ void masked_InnerProdDecNTT(uint8_t *m, size_t m_msk_stide,
   for (i = 0; i < SABER_N; i++) {
     m_poly[0][i] =
         (SABER_P + m_poly[0][i] + h2 - (cm[i] << (SABER_EP - SABER_ET))) & ((1<<SABER_EP)-1);
-        SABER_P;
   }
 
   // compression of mpoly

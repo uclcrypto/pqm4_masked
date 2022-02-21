@@ -117,15 +117,18 @@ int crypto_kem_dec(uint8_t *k, const uint8_t *c, const uint8_t *sk) {
   sha3_256(kr + 32, c, SABER_BYTES_CCA_DEC); // overwrite coins in kr with h(c)
 
   // No need to mask this, like for Kyber
-  // -> unmask K in kr
   memset(kr, 0, 32);
+  cmov(masked_kr, sk + SABER_SECRETKEYBYTES - SABER_KEYBYTES, SABER_KEYBYTES, fail);
+  for (size_t d = 1; d < NSHARES; d++){
+    cmov(&masked_kr[d * 64], kr, SABER_KEYBYTES, fail); // set zeros in masked_kr if failed.
+  }
+  
+  // umask kr
   for (size_t d = 0; d < NSHARES; d++) {
     for (size_t i = 0; i < 32; i++) {
       kr[i] ^= masked_kr[d * 64 + i];
     }
   }
-  cmov(kr, sk + SABER_SECRETKEYBYTES - SABER_KEYBYTES, SABER_KEYBYTES, fail);
-
   // No need to mask this, like for Kyber
   sha3_256(k, kr, 64); // hash concatenation of pre-k and h(c) to k
 
