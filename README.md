@@ -1,5 +1,5 @@
 # pqm4_masked
-Post-quantum masked crypto library for the ARM Cortex-M4
+Post-quantum masked crypto library for the ARM Cortex-M4.
 
 ## Introduction
 The **pqm4\_masked** library is based on [pqm4](https://github.com/mupq/pqm4).
@@ -16,6 +16,9 @@ The main differences are
 * some changes in the tooling to allow for finer-grained benchmarking and testing
   (for this, we use a slightly modified version of the `mupq` submodule located
   at <https//github.com/uclcrypto/mupq>).
+
+The provided code has not been extensively optimized. Simple programming tricks can improve the 
+performances, especially for small number of shares. 
 
 ## Setup/Installation
 
