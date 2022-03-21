@@ -140,15 +140,14 @@ int crypto_kem_dec(unsigned char *ss, const unsigned char *ct,
   hash_h(kr + KYBER_SYMBYTES, ct,
          KYBER_CIPHERTEXTBYTES); /* overwrite coins in kr with H(c)  */
 
-  memset(kr,0,KYBER_SYMBYTES);
+  memset(kr, 0, KYBER_SYMBYTES);
   // masked cmov
   cmov(masked_kr, sk + KYBER_SECRETKEYBYTES - KYBER_SYMBYTES, KYBER_SYMBYTES,
        fail); /* Overwrite pre-k with z on re-encryption failure */
   for (d = 1; d < NSHARES; d++) {
-    cmov(&masked_kr[d * 2 * KYBER_SYMBYTES], kr, KYBER_SYMBYTES,
-       fail); 
+    cmov(&masked_kr[d * 2 * KYBER_SYMBYTES], kr, KYBER_SYMBYTES, fail);
   }
-  
+
   // unmasking masked_kr
   for (d = 0; d < NSHARES; d++) {
     for (i = 0; i < KYBER_SYMBYTES; i++) {

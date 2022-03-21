@@ -452,20 +452,20 @@ unsigned int test_secb2a_modp() {
       coeffs_in1[j * NSHARES] ^= r;
 
       r = rand32() & mask;
-      coeffs_in1[j * NSHARES + i+ BSSIZE * NSHARES] = r;
-      coeffs_in1[j * NSHARES+ BSSIZE * NSHARES] ^= r;
+      coeffs_in1[j * NSHARES + i + BSSIZE * NSHARES] = r;
+      coeffs_in1[j * NSHARES + BSSIZE * NSHARES] ^= r;
     }
   }
   masked_dense2bitslice_opt(NSHARES, kbits, in1, 1, NSHARES, coeffs_in1, 1,
-                        NSHARES);
+                            NSHARES);
   secb2a_modp(NSHARES, q, in1, 1, NSHARES);
 
   masked_bitslice2dense_opt(NSHARES, kbits, coeffs_out, 1, NSHARES, in1, 1,
-                        NSHARES);
+                            NSHARES);
 
   // check correctness
   err = 0;
-  for (i = 0; i < 2*BSSIZE; i++) {
+  for (i = 0; i < 2 * BSSIZE; i++) {
     uint32_t uin1, uout;
     uin1 = 0;
     uout = 0;
@@ -539,7 +539,7 @@ unsigned int test_seccompress() {
     coeffs_in1[i] = rand32() % q;
   }
 
-  seccompress(NSHARES,  q, c, out, 1, NSHARES, coeffs_in1, 1, NSHARES);
+  seccompress(NSHARES, q, c, out, 1, NSHARES, coeffs_in1, 1, NSHARES);
 
   // convert all bitslice to dense
   masked_bitslice2dense(NSHARES, BSSIZE, kbits, coeffs_out, 1, NSHARES, out, 1,
@@ -582,22 +582,20 @@ unsigned int test_cbd() {
   size_t i, d;
   int err = 0;
 
-  int16_t z[nshares * n_coeffs  *2 ];
-  uint32_t a[eta * nshares*2];
-  uint32_t b[eta * nshares*2];
-  int16_t a_dense[n_coeffs * nshares *2];
-  int16_t b_dense[n_coeffs * nshares *2 ];
+  int16_t z[nshares * n_coeffs * 2];
+  uint32_t a[eta * nshares * 2];
+  uint32_t b[eta * nshares * 2];
+  int16_t a_dense[n_coeffs * nshares * 2];
+  int16_t b_dense[n_coeffs * nshares * 2];
 
-  masked_cbd(nshares, eta, p, kbits, z, 1, nshares, a, 1, nshares, b,
-             1, nshares);
+  masked_cbd(nshares, eta, p, kbits, z, 1, nshares, a, 1, nshares, b, 1,
+             nshares);
 
-  masked_bitslice2dense_opt(nshares, eta, a_dense, 1, nshares, a, 1,
-                        nshares);
+  masked_bitslice2dense_opt(nshares, eta, a_dense, 1, nshares, a, 1, nshares);
 
-  masked_bitslice2dense_opt(nshares, eta, b_dense, 1, nshares, b, 1,
-                        nshares);
+  masked_bitslice2dense_opt(nshares, eta, b_dense, 1, nshares, b, 1, nshares);
 
-  for (i = 0; i < n_coeffs*2; i++) {
+  for (i = 0; i < n_coeffs * 2; i++) {
     uint32_t x = 0;
     uint32_t au = 0;
     uint32_t bu = 0;

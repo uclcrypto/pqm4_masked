@@ -181,10 +181,10 @@ unsigned char masked_indcpa_enc_cmp(const unsigned char *c,
 
   // unpack reference ciphertext
   polyvec_decompress(&c_ref, c);
-  for( i=0; i< KYBER_K;i++){
+  for (i = 0; i < KYBER_K; i++) {
     for (int j = 0; j < KYBER_N; j++) {
-        c_ref.vec[i].coeffs[j] =
-            compress(c_ref.vec[i].coeffs[j], KYBER_Q, KYBER_DU);
+      c_ref.vec[i].coeffs[j] =
+          compress(c_ref.vec[i].coeffs[j], KYBER_Q, KYBER_DU);
     }
   }
   poly v_ref;
@@ -303,7 +303,8 @@ masked_indcpa_dec(unsigned char *m, // secret
 
   for (d = 0; d < NSHARES; d++) {
     for (int i = 0; i < KYBER_INDCPA_MSGBYTES; i++) {
-      m[i * o_data_stride + d * o_msk_stride] = m_masked[d * KYBER_INDCPA_MSGBYTES + i];
+      m[i * o_data_stride + d * o_msk_stride] =
+          m_masked[d * KYBER_INDCPA_MSGBYTES + i];
     }
   }
 

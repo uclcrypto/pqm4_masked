@@ -23,23 +23,26 @@
 
 // Atomic gadgets
 void masked_xor_c(size_t nshares, uint32_t *out, size_t out_stride,
-                const uint32_t *ina, size_t ina_stride, const uint32_t *inb,
-                size_t inb_stride);
+                  const uint32_t *ina, size_t ina_stride, const uint32_t *inb,
+                  size_t inb_stride);
 void masked_xor_asm(size_t nshares, uint32_t *out, size_t out_stride,
-                const uint32_t *ina, size_t ina_stride, const uint32_t *inb,
-                size_t inb_stride);
-void masked_and_c(size_t nshares, uint32_t *z, size_t z_stride, const uint32_t *a,
-                size_t a_stride, const uint32_t *b, size_t b_stride);
-void masked_and_asm(size_t nshares, uint32_t *z, size_t z_stride, const uint32_t *a,
-                size_t a_stride, const uint32_t *b, size_t b_stride);
+                    const uint32_t *ina, size_t ina_stride, const uint32_t *inb,
+                    size_t inb_stride);
+void masked_and_c(size_t nshares, uint32_t *z, size_t z_stride,
+                  const uint32_t *a, size_t a_stride, const uint32_t *b,
+                  size_t b_stride);
+void masked_and_asm(size_t nshares, uint32_t *z, size_t z_stride,
+                    const uint32_t *a, size_t a_stride, const uint32_t *b,
+                    size_t b_stride);
 
-#define masked_and(nshares,z,z_stride,a,a_stride,b,b_stride) masked_and_asm(nshares,z,z_stride,a,a_stride,b,b_stride)
-#define masked_xor(nshares,z,z_stride,a,a_stride,b,b_stride) masked_xor_asm(nshares,z,z_stride,a,a_stride,b,b_stride)
+#define masked_and(nshares, z, z_stride, a, a_stride, b, b_stride)             \
+  masked_and_asm(nshares, z, z_stride, a, a_stride, b, b_stride)
+#define masked_xor(nshares, z, z_stride, a, a_stride, b, b_stride)             \
+  masked_xor_asm(nshares, z, z_stride, a, a_stride, b, b_stride)
 
 void copy_sharing(size_t nshares, uint32_t *out, size_t out_stride,
                   const uint32_t *in, size_t in_stride);
-void RefreshIOS_rec(size_t nshares, size_t d,
-    uint32_t *x, size_t x_msk_stride); 
+void RefreshIOS_rec(size_t nshares, size_t d, uint32_t *x, size_t x_msk_stride);
 // Adders
 void secfulladd(size_t nshares, uint32_t *co, size_t co_msk_stride, uint32_t *w,
                 size_t w_msk_stide, uint32_t *ci, size_t ci_msk_stride,
@@ -77,15 +80,14 @@ void secb2a_modp(size_t nshares, uint32_t p, uint32_t *in, size_t in_msk_stride,
                  size_t in_data_stride);
 
 // Lattice-based KEM specific
-void seccompress(size_t nshares, uint32_t q, uint32_t c,
-                 uint32_t *out, size_t out_msk_stride, size_t out_data_stride,
+void seccompress(size_t nshares, uint32_t q, uint32_t c, uint32_t *out,
+                 size_t out_msk_stride, size_t out_data_stride,
                  const int16_t *in, size_t in_msk_stride,
                  size_t in_data_stride);
 
-void masked_cbd(size_t nshares, size_t eta, size_t p,
-                size_t kbits, int16_t *z, size_t z_msk_stride,
-                size_t z_data_stride, uint32_t *a, size_t a_msk_stride,
-                size_t a_data_stride, uint32_t *b, size_t b_msk_stride,
-                size_t b_data_stride);
+void masked_cbd(size_t nshares, size_t eta, size_t p, size_t kbits, int16_t *z,
+                size_t z_msk_stride, size_t z_data_stride, uint32_t *a,
+                size_t a_msk_stride, size_t a_data_stride, uint32_t *b,
+                size_t b_msk_stride, size_t b_data_stride);
 
 #endif // GADGETS_H

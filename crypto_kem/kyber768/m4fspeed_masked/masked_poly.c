@@ -14,8 +14,8 @@
  * You should have received a copy of the GNU General Public License along with
  * pqm4_masked. If not, see <https://www.gnu.org/licenses/>.
  */
-#include "bench.h"
 #include "masked_poly.h"
+#include "bench.h"
 #include "masked.h"
 #include "masked_representations.h"
 #include "poly.h"
@@ -87,13 +87,13 @@ void masked_poly_noise(StrAPoly r, const unsigned char *masked_seed,
   uint32_t a[kappa * NSHARES * 2];
   uint32_t b[kappa * NSHARES * 2];
   int16_t out[NSHARES * BSSIZE * 2];
-  uint32_t bytes_off,by;
+  uint32_t bytes_off, by;
 
   masked_shake256_prf(buf_masked, KYBER_ETA * KYBER_N / 4,
                       KYBER_ETA * KYBER_N / 4, 1, masked_seed, seed_msk_stride,
                       seed_data_stride, nonce);
   // all the bitslice. 32*4 bits =
-  for (uint32_t i = 0; i < KYBER_N / (2*BSSIZE); i++) {
+  for (uint32_t i = 0; i < KYBER_N / (2 * BSSIZE); i++) {
     // all the bits
     // 32*4 bits = 128 bits = 16 bytes
     for (uint32_t j = 0; j < kappa * NSHARES * 2; j++) {
@@ -101,7 +101,7 @@ void masked_poly_noise(StrAPoly r, const unsigned char *masked_seed,
       b[j] = 0;
     }
 
-    for (int n = 0; n < 16; n+=1) {
+    for (int n = 0; n < 16; n += 1) {
       for (uint32_t d = 0; d < NSHARES; d++) {
         bytes_off = i * 32 + n;
         by = buf_masked[bytes_off + d * (kappa * KYBER_N / 4)];
@@ -119,20 +119,23 @@ void masked_poly_noise(StrAPoly r, const unsigned char *masked_seed,
         bytes_off = i * 32 + n + 16;
         by = buf_masked[bytes_off + d * (kappa * KYBER_N / 4)];
 
-        a[d+kappa * NSHARES] =
-            (a[d + kappa * NSHARES] << 2) | (((by >> 0) & 0x1) << 1) | (((by >> 4) & 0x1) << 0);
-        a[NSHARES + d + kappa*NSHARES] = (a[NSHARES + d + kappa*NSHARES] << 2) | (((by >> 1) & 0x1) << 1) |
-                         (((by >> 5) & 0x1) << 0);
+        a[d + kappa * NSHARES] = (a[d + kappa * NSHARES] << 2) |
+                                 (((by >> 0) & 0x1) << 1) |
+                                 (((by >> 4) & 0x1) << 0);
+        a[NSHARES + d + kappa * NSHARES] =
+            (a[NSHARES + d + kappa * NSHARES] << 2) | (((by >> 1) & 0x1) << 1) |
+            (((by >> 5) & 0x1) << 0);
 
-        b[d + kappa * NSHARES] =
-            (b[d + kappa*NSHARES] << 2) | (((by >> 2) & 0x1) << 1) | (((by >> 6) & 0x1) << 0);
-        b[NSHARES + d + kappa * NSHARES] = (b[NSHARES + d + kappa*NSHARES] << 2) | (((by >> 3) & 0x1) << 1) |
-                         (((by >> 7) & 0x1) << 0);
-
+        b[d + kappa * NSHARES] = (b[d + kappa * NSHARES] << 2) |
+                                 (((by >> 2) & 0x1) << 1) |
+                                 (((by >> 6) & 0x1) << 0);
+        b[NSHARES + d + kappa * NSHARES] =
+            (b[NSHARES + d + kappa * NSHARES] << 2) | (((by >> 3) & 0x1) << 1) |
+            (((by >> 7) & 0x1) << 0);
       }
     }
-    masked_cbd(NSHARES, 2,KYBER_Q, COEF_NBITS, out, 1, NSHARES, a, 1,
-               NSHARES, b, 1, NSHARES);
+    masked_cbd(NSHARES, 2, KYBER_Q, COEF_NBITS, out, 1, NSHARES, a, 1, NSHARES,
+               b, 1, NSHARES);
 
     for (uint32_t n = 0; n < BSSIZE; n++) {
       for (uint32_t j = 0; j < NSHARES; j++) {
@@ -141,11 +144,12 @@ void masked_poly_noise(StrAPoly r, const unsigned char *masked_seed,
               (r[j][(i * 64) + 31 - n] + out[n * NSHARES + j]) % KYBER_Q;
 
           r[j][(i * 64) + 31 - n + 32] =
-              (r[j][(i * 64) + 31 - n + 32] + out[(n+32) * NSHARES + j]) % KYBER_Q;
+              (r[j][(i * 64) + 31 - n + 32] + out[(n + 32) * NSHARES + j]) %
+              KYBER_Q;
 
         } else {
           r[j][(i * 64) + 31 - n] = out[n * NSHARES + j];
-          r[j][(i * 64) + 31 - n + 32] = out[(n+32) * NSHARES + j];
+          r[j][(i * 64) + 31 - n + 32] = out[(n + 32) * NSHARES + j];
         }
       }
     }
@@ -161,12 +165,12 @@ void masked_poly_tomsg(unsigned char *m, StrAPoly str_r) {
   StrAPoly2APoly(r, str_r);
   for (i = 0; i < KYBER_N; i += BSSIZE) {
 
-    seccompress(NSHARES, KYBER_Q, 1, bits, 1, NSHARES, r[i], 1,
-                NSHARES);
+    seccompress(NSHARES, KYBER_Q, 1, bits, 1, NSHARES, r[i], 1, NSHARES);
 
     for (d = 0; d < NSHARES; d++) {
       for (j = 0; j < BSSIZE / 8; j++) {
-        m[d * KYBER_INDCPA_MSGBYTES +  (i / 8) + j] = (bits[d] >> (j * 8)) & 0xFF;
+        m[d * KYBER_INDCPA_MSGBYTES + (i / 8) + j] =
+            (bits[d] >> (j * 8)) & 0xFF;
       }
     }
   }
@@ -174,14 +178,14 @@ void masked_poly_tomsg(unsigned char *m, StrAPoly str_r) {
 }
 
 /*************************************************
- * Name:       masked_poly_cmp 
+ * Name:       masked_poly_cmp
  *
- * Description: Compares masked polynomial with reference polynomial 
+ * Description: Compares masked polynomial with reference polynomial
  *
  * Arguments: - size_t c compression factor
  *            - uint32_t *rc: check bits array. Must be set to 0xFFFFFFFF if
  *              all the bits in two polynomials are equal.
- *            - StrAPoly mp: masked polynomial 
+ *            - StrAPoly mp: masked polynomial
  *            - poly *ref: reference polynomial
  **************************************************/
 
@@ -191,24 +195,22 @@ void masked_poly_cmp(size_t c, uint32_t *rc, const StrAPoly mp,
   start_bench(my_masked_poly_cmp);
   APoly r;
   size_t i, b;
-  uint32_t bits[2* NSHARES * c];
-  uint32_t bits_ref[2*c];
+  uint32_t bits[2 * NSHARES * c];
+  uint32_t bits_ref[2 * c];
 
   StrAPoly2APoly(r, mp);
 
-  for (i = 0; i < KYBER_N; i += BSSIZE*2) {
+  for (i = 0; i < KYBER_N; i += BSSIZE * 2) {
 
     // compress masked polynomial
-    seccompress(NSHARES,  KYBER_Q, c, bits, 1, NSHARES, r[i], 1,
-                NSHARES);
-    seccompress(NSHARES,  KYBER_Q, c, &bits[NSHARES*c], 1, NSHARES, r[i+BSSIZE], 1,
-                NSHARES);
+    seccompress(NSHARES, KYBER_Q, c, bits, 1, NSHARES, r[i], 1, NSHARES);
+    seccompress(NSHARES, KYBER_Q, c, &bits[NSHARES * c], 1, NSHARES,
+                r[i + BSSIZE], 1, NSHARES);
 
     // map public polynomial to bitslice
-    masked_dense2bitslice_opt(1, c, bits_ref, 1, 1, &(ref->coeffs[i]), 1,
-                          1);
+    masked_dense2bitslice_opt(1, c, bits_ref, 1, 1, &(ref->coeffs[i]), 1, 1);
 
-    for (b = 0; b < 2*c; b++) {
+    for (b = 0; b < 2 * c; b++) {
       // public polynomial and public one
       bits[b * NSHARES] ^= bits_ref[b] ^ 0xFFFFFFFF;
 
@@ -219,17 +221,17 @@ void masked_poly_cmp(size_t c, uint32_t *rc, const StrAPoly mp,
 }
 
 /*************************************************
- * Name:       finalize 
+ * Name:       finalize
  *
- * Description: inplace ANDs all the 32-bits within bits 
+ * Description: inplace ANDs all the 32-bits within bits
  *
- * Arguments: - uint32_t *bits: bits to ANDs 
+ * Arguments: - uint32_t *bits: bits to ANDs
  * **************************************************/
 void finalize_cmp(uint32_t *bits) {
   start_bench(my_cmp_finalize);
   uint32_t other[NSHARES];
   int d, shift;
-  for(shift = 16; shift > 0; shift = shift >> 1){
+  for (shift = 16; shift > 0; shift = shift >> 1) {
     for (d = 0; d < NSHARES; d++) {
       other[d] = bits[d] >> shift;
     }

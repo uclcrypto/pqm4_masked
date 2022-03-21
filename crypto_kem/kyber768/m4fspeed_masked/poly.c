@@ -505,9 +505,9 @@ void poly_noise(poly *r, const unsigned char *seed, unsigned char nonce,
  *
  * Arguments:   - uint16_t *r: pointer to in/output polynomial
  **************************************************/
-void poly_ntt(poly *r) { 
+void poly_ntt(poly *r) {
   start_bench(my_ntt);
-  ntt(r->coeffs); 
+  ntt(r->coeffs);
   stop_bench(my_ntt);
 }
 
@@ -520,7 +520,7 @@ void poly_ntt(poly *r) {
  *
  * Arguments:   - uint16_t *a: pointer to in/output polynomial
  **************************************************/
-void poly_invntt(poly *r) { 
+void poly_invntt(poly *r) {
   start_bench(my_ntt);
   invntt(r->coeffs);
   stop_bench(my_ntt);
