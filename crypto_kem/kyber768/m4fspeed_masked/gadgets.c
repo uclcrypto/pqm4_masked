@@ -469,14 +469,17 @@ void seca2b(size_t nshares, size_t kbits, uint32_t *in, size_t in_msk_stride,
   uint32_t expanded_high[kbits * nshares];
 
   for (i = 0; i < kbits; i++) {
+    copy_sharing(nshares_low,
+          &expanded_low[i*nshares],1,
+          &in[i*in_data_stride], in_msk_stride);
+    copy_sharing(nshares_high,
+        &expanded_high[i*nshares + nshares_low],1,
+        &in[i*in_data_stride + nshares_low * in_msk_stride], in_msk_stride);
+    
     for (d = 0; d < nshares_low; d++) {
-      expanded_low[i * nshares + d] =
-          in[i * in_data_stride + d * in_msk_stride];
       expanded_high[i * nshares + d] = 0;
     }
     for (d = nshares_low; d < nshares; d++) {
-      expanded_high[i * nshares + d] =
-          in[i * in_data_stride + d * in_msk_stride];
       expanded_low[i * nshares + d] = 0;
     }
   }
@@ -527,6 +530,11 @@ void seca2b_modp(size_t nshares, size_t kbits, uint32_t p, uint32_t *in,
                   in_msk_stride, in_data_stride, (1 << (kbits + 1)) - p);
 
   for (i = 0; i < (kbits + 1); i++) {
+    if(i < kbits){
+      copy_sharing(nshares_high,
+        &expanded_high[i*nshares + nshares_low],1,
+        &in[i*in_data_stride + nshares_low * in_msk_stride], in_msk_stride);
+    }
     for (d = 0; d < nshares_low; d++) {
       // has already been written by secadd_constant_bmsk
       // expanded_low[i*nshares + d] = in[i*in_data_stride + d*in_msk_stride];
@@ -534,8 +542,9 @@ void seca2b_modp(size_t nshares, size_t kbits, uint32_t p, uint32_t *in,
     }
     for (d = nshares_low; d < nshares; d++) {
       // kbits + 1 within in is unset
-      expanded_high[i * nshares + d] =
-          (i < (kbits)) ? in[i * in_data_stride + d * in_msk_stride] : 0;
+      if(i >= kbits){
+        expanded_high[i * nshares + d] = 0;
+      }
       expanded_low[i * nshares + d] = 0;
     }
   }
