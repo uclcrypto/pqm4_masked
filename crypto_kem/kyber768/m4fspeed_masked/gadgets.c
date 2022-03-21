@@ -49,7 +49,7 @@ static inline uint32_t pini_and_core(uint32_t a, uint32_t b, uint32_t r) {
  *            - uint32_t *b: second input buffer
  *            - size_t b_stride: b buffer stride
  **************************************************/
-void masked_and(size_t nshares, uint32_t *z, size_t z_stride, const uint32_t *a,
+void masked_and_c(size_t nshares, uint32_t *z, size_t z_stride, const uint32_t *a,
                 size_t a_stride, const uint32_t *b, size_t b_stride) {
   uint32_t ztmp[nshares];
   uint32_t r;
@@ -85,7 +85,7 @@ void masked_and(size_t nshares, uint32_t *z, size_t z_stride, const uint32_t *a,
  *            - uint32_t *b: second input buffer
  *            - size_t b_stride: b buffer stride
  **************************************************/
-void masked_xor(size_t nshares, uint32_t *out, size_t out_stride,
+void masked_xor_c(size_t nshares, uint32_t *out, size_t out_stride,
                 const uint32_t *ina, size_t ina_stride, const uint32_t *inb,
                 size_t inb_stride) {
   for (size_t i = 0; i < nshares; i++) {
@@ -175,12 +175,17 @@ void secadd(size_t nshares, size_t kbits, size_t kbits_out, uint32_t *out,
     // xpy = in2 ^ in1
     // xpc = in1 ^ carry
     // out = xpy ^ carry
-    for (d = 0; d < nshares; d++) {
-      xpy[d] = in1[i * in1_data_stride + d * in1_msk_stride] ^
-               in2[i * in2_data_stride + d * in2_msk_stride];
-      xpc[d] = in1[i * in1_data_stride + d * in1_msk_stride] ^ carry[d];
-      out[i * out_data_stride + d * out_msk_stride] = xpy[d] ^ carry[d];
-    }
+
+    masked_xor(nshares, xpy, 1, 
+        &in1[i *in1_data_stride], in1_msk_stride,
+        &in2[i *in2_data_stride], in2_msk_stride);
+    masked_xor(nshares, xpc, 1, 
+        &in1[i *in1_data_stride], in1_msk_stride,
+        carry, 1);     
+    masked_xor(nshares, 
+        &out[i* out_data_stride], out_msk_stride,
+        xpy, 1, 
+        carry, 1);
 
     if ((i == (kbits - 1)) && (i == (kbits_out - 1))) {
       break;
@@ -250,12 +255,16 @@ void secadd_constant_bmsk(size_t nshares, size_t kbits, size_t kbits_out,
     // xpc = in1 ^ carry
     // out = xpy ^ carry
     if ((constant >> i) & 0x1) {
-      for (d = 0; d < nshares; d++) {
-        xpy[d] = in1[i * in1_data_stride + d * in1_msk_stride] ^
-                 bmsk[d * bmsk_msk_stride];
-        xpc[d] = in1[i * in1_data_stride + d * in1_msk_stride] ^ carry[d];
-        out[i * out_data_stride + d * out_msk_stride] = xpy[d] ^ carry[d];
-      }
+      masked_xor(nshares, xpy, 1, 
+          &in1[i *in1_data_stride], in1_msk_stride,
+          bmsk, bmsk_msk_stride);
+      masked_xor(nshares, xpc, 1, 
+          &in1[i *in1_data_stride], in1_msk_stride,
+          carry, 1);     
+      masked_xor(nshares, 
+          &out[i* out_data_stride], out_msk_stride,
+          xpy, 1, 
+          carry, 1);
 
       if ((i == (kbits - 1)) && (i == (kbits_out - 1))) {
         return;
@@ -332,11 +341,15 @@ void secadd_constant(size_t nshares, size_t kbits, size_t kbits_out,
 
   for (i = 1; i < kbits; i++) {
     if ((constant >> i) & 0x1) {
-      for (d = 0; d < nshares; d++) {
-        xpy[d] = in1[i * in1_data_stride + d * in1_msk_stride];
-        xpc[d] = in1[i * in1_data_stride + d * in1_msk_stride] ^ carry[d];
-        out[i * out_data_stride + d * out_msk_stride] = xpy[d] ^ carry[d];
-      }
+      copy_sharing(nshares, xpy, 1, &in1[i* in1_data_stride], in1_msk_stride);
+      masked_xor(nshares, xpc, 1, 
+          &in1[i *in1_data_stride], in1_msk_stride,
+          carry, 1);     
+      masked_xor(nshares, 
+          &out[i* out_data_stride], out_msk_stride,
+          xpy, 1, 
+          carry, 1);
+
       xpy[0] ^= 0xFFFFFFFF;
       out[i * out_data_stride] ^= 0xFFFFFFFF;
 
