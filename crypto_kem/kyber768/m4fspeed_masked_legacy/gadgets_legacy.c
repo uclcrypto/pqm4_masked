@@ -264,3 +264,13 @@ void kyber_decryption(Masked* x, Masked* b){
   modulus_switch(x, KYBER_Q, l);
   convert_2_l_to_1bit_bool(x, b, l);
 }
+void boolean_refresh(Masked* x, unsigned k){
+    int r;
+    for(int i=0; i< KYBER_MASKING_ORDER+1; ++i){
+        for(int j=i+1; j < KYBER_MASKING_ORDER+1; ++j){
+            r = (int) rand32() & ((1<<k)-1);
+            x->shares[i] = (x->shares[i] ^ r);
+            x->shares[j] = (x->shares[j] ^ r);
+        }
+    }
+}

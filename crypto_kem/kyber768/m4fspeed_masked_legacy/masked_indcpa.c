@@ -25,6 +25,7 @@
 #include "polyvec.h"
 #include "randombytes.h"
 #include "symmetric.h"
+#include "gadgets_legacy.h"
 
 #include <stdint.h>
 #include <string.h>
@@ -153,6 +154,8 @@ unsigned char masked_indcpa_enc_cmp(const unsigned char *c,
                                     size_t coins_msk_stride,
                                     size_t coins_data_stride) {
 
+  Masked to_compare[KYBER_N * (KYBER_K+1)];
+  uint16_t ref_to_compare[KYBER_N * (KYBER_K+1)];
   uint64_t rc = 0;
   uint32_t rc_masked[NSHARES];
 
@@ -185,12 +188,14 @@ unsigned char masked_indcpa_enc_cmp(const unsigned char *c,
     for (int j = 0; j < KYBER_N; j++) {
       c_ref.vec[i].coeffs[j] =
           compress(c_ref.vec[i].coeffs[j], KYBER_Q, KYBER_DU);
+      ref_to_compare[ i *KYBER_N  + j] = c_ref.vec[i].coeffs[j];
     }
   }
   poly v_ref;
   poly_decompress(&v_ref, c + KYBER_POLYVECCOMPRESSEDBYTES);
   for (int j = 0; j < KYBER_N; j++) {
     v_ref.coeffs[j] = compress(v_ref.coeffs[j], KYBER_Q, KYBER_DV);
+    ref_to_compare[ KYBER_K * KYBER_N  + j] = v_ref.coeffs[j];
   }
 
   for (i = 0; i < KYBER_K; i++) {
@@ -199,7 +204,12 @@ unsigned char masked_indcpa_enc_cmp(const unsigned char *c,
     masked_poly_invntt(masked_bp);
     masked_poly_noise(masked_bp, masked_coins, coins_msk_stride,
                       coins_data_stride, nonce++, 1);
-    masked_poly_cmp(KYBER_DU, rc_masked, masked_bp, &c_ref.vec[i]);
+    for(int j = 0; j < KYBER_N; j++){
+      for(int d = 0; d < NSHARES; d++){
+        to_compare[i * KYBER_K + j].shares[d] = masked_bp[d][j];
+      }
+    }
+    //masked_poly_cmp(KYBER_DU, rc_masked, masked_bp, &c_ref.vec[i]);
   }
 
   // multiply sp vector with public key vector
@@ -225,15 +235,14 @@ unsigned char masked_indcpa_enc_cmp(const unsigned char *c,
     poly_reduce_i16(masked_v[d]);
   }
 
-  masked_poly_cmp(KYBER_DV, rc_masked, masked_v, &v_ref);
-
-  // AND 32 bits together and unmask the result.
-  finalize_cmp(rc_masked);
-  for (d = 0; d < NSHARES; d++) {
-    rc ^= rc_masked[d];
+  for(int j = 0; j < KYBER_N; j ++){
+    for(int d = 0; d < NSHARES; d ++){
+      to_compare[KYBER_K * KYBER_N + j].shares[d] = masked_v[d][j];
+    }
   }
+  rc = kyber_poly_comp_hybrid(to_compare,ref_to_compare);
 
-  return (unsigned char)(!rc);
+  return (unsigned char)(rc);
 }
 
 /*************************************************

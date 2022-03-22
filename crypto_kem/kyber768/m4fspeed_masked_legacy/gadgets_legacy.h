@@ -1,6 +1,6 @@
 #ifndef __GADGETS_LEGACY_H__
 #define __GADGETS_LEGACY_H__
-
+#include <stdint.h>
 #define KYBER_MASKING_ORDER (NSHARES-1)
 #define KYBER_Q 3329
 typedef struct Masked {int32_t shares[KYBER_MASKING_ORDER+1];} Masked;

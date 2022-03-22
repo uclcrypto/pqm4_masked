@@ -49,11 +49,16 @@ inline void rand_q(int16_t v[2]) {
   v[1] = r / KYBER_Q;
 }
 
-inline int16_t sampleq() {
-  int16_t v[2];
-  rand_q(v);
-  return v[0];
+static uint16_t sampleq_id=0;
+static uint16_t sampleq_rs[2];
+inline uint16_t sampleq(){
+    sampleq_id ^= 0x1;
+    if((sampleq_id&0x1) == 0x1){
+        rand_q(sampleq_rs);
+    }
+    return sampleq_rs[sampleq_id];
 }
+
 void masked_poly(StrAPoly mp, const poly *p);
 void unmasked_poly(poly *p, const StrAPoly mp);
 #endif
