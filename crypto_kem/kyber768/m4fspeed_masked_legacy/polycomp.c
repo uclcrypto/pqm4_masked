@@ -342,12 +342,13 @@ int kyber_poly_comp_hybrid(Masked* mmasked_poly, uint16_t* ppoly){
   unsigned d1=KYBER_DU, d2=KYBER_DV, alpha=16, q=KYBER_Q;
 
 
-    alpha=0;
-    uint32_t prod = KYBER_Q*D;
-    while(prod > 0){
-        prod = prod >> 1;
-        alpha++;
-    }
+  alpha=0;
+  uint32_t prod = KYBER_Q*D;
+  while(prod > 0){
+      prod = prod >> 1;
+      alpha++;
+  }
+  
   for(int i=0; i < l1; ++i) range_compare(&(mmasked_poly[i]), &(z[i]), ppoly[i], d1, q);
   for(int i=0; i < l2; ++i) high_order_compress(&(mmasked_poly[l1 + i]), &(mmasked_poly[l1 + i]), q, d2, alpha);
 

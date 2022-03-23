@@ -156,8 +156,6 @@ unsigned char masked_indcpa_enc_cmp(const unsigned char *c,
 
   Masked to_compare[KYBER_N * (KYBER_K+1)];
   uint16_t ref_to_compare[KYBER_N * (KYBER_K+1)];
-  uint64_t rc = 0;
-  uint32_t rc_masked[NSHARES];
 
   poly bp;
   polyvec c_ref;
@@ -165,11 +163,6 @@ unsigned char masked_indcpa_enc_cmp(const unsigned char *c,
   const unsigned char *seed = pk + KYBER_POLYVECBYTES;
   int i, d;
   unsigned char nonce = 0;
-
-  for (d = 1; d < NSHARES; d++) {
-    rc_masked[d] = 0;
-  }
-  rc_masked[0] = 0xFFFFFFFF;
 
   StrAPolyVec masked_sp;
   StrAPoly masked_bp;
@@ -188,7 +181,6 @@ unsigned char masked_indcpa_enc_cmp(const unsigned char *c,
     for (int j = 0; j < KYBER_N; j++) {
       c_ref.vec[i].coeffs[j] =
           compress(c_ref.vec[i].coeffs[j], KYBER_Q, KYBER_DU);
-      ref_to_compare[ i *KYBER_N  + j] = c_ref.vec[i].coeffs[j];
     }
   }
   poly v_ref;
@@ -204,12 +196,14 @@ unsigned char masked_indcpa_enc_cmp(const unsigned char *c,
     masked_poly_invntt(masked_bp);
     masked_poly_noise(masked_bp, masked_coins, coins_msk_stride,
                       coins_data_stride, nonce++, 1);
+  
+
     for(int j = 0; j < KYBER_N; j++){
       for(int d = 0; d < NSHARES; d++){
-        to_compare[i * KYBER_K + j].shares[d] = masked_bp[d][j];
+        to_compare[(i * KYBER_N) + j].shares[d] =  (masked_bp[d][j] + KYBER_Q)%KYBER_Q;
       }
+      ref_to_compare[(i * KYBER_N)  + j] = c_ref.vec[i].coeffs[j];
     }
-    //masked_poly_cmp(KYBER_DU, rc_masked, masked_bp, &c_ref.vec[i]);
   }
 
   // multiply sp vector with public key vector
@@ -240,9 +234,10 @@ unsigned char masked_indcpa_enc_cmp(const unsigned char *c,
       to_compare[KYBER_K * KYBER_N + j].shares[d] = masked_v[d][j];
     }
   }
-  rc = kyber_poly_comp_hybrid(to_compare,ref_to_compare);
 
-  return (unsigned char)(rc);
+  int rc;
+  rc = kyber_poly_comp_hybrid(to_compare,ref_to_compare);
+  return (unsigned char)(!rc);
 }
 
 /*************************************************
