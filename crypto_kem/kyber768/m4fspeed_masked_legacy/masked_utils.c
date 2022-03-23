@@ -21,8 +21,14 @@
 
 extern inline uint32_t get_random();
 extern inline uint32_t rand32();
+extern inline uint64_t rand64();
 extern inline void rand_q(int16_t v[2]);
+extern inline uint16_t rand16();
 
+uint16_t sampleq_id=0;
+int16_t sampleq_rs[2];
+uint16_t r16_id = 0;
+uint32_t r16_rs;
 /*************************************************
  * Name:        masked_poly
  *

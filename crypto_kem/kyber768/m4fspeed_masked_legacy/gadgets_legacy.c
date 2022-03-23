@@ -2,12 +2,7 @@
 #include "gadgets_legacy.h"
 #include "masked_utils.h"
 
-uint64_t rand64(){
-  return ((uint64_t)rand32() << 32) + (uint64_t)rand32();
-}
-uint16_t rand16(){
-  return (uint16_t)rand32()&(0xFFFF);
-}
+
 
 void linear_arithmetic_refresh(Masked* x, unsigned q){
   int16_t r[2];
