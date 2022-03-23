@@ -1,5 +1,6 @@
 #include "polycomp.h"
 #include "gadgets_legacy.h"
+#include "gadgets.h"
 #include "masked_utils.h"
 #include "params.h"
 #include <stdint.h>
@@ -19,32 +20,7 @@ static unsigned decompress(unsigned x, unsigned q, unsigned d){
 
 
 static void sec_and(Masked* x, Masked* y, Masked* res, int k){
-
-#if KYBER_MASKING_ORDER == 1
-    uint16_t u = rand16()&((1<<k)-1);
-    uint16_t z;
-    z = u ^ (x->shares[0] & y->shares[0]);
-    z = z ^ (x->shares[0] & y->shares[1]);
-    z = z ^ (x->shares[1] & y->shares[0]);
-    z = z ^ (x->shares[1] & y->shares[1]);
-    res->shares[0] = z;
-    res->shares[1] = u;
-
-#else
-    Masked r;
-    uint16_t i, j, z_ij, z_ji;
-    for(i=0; i < KYBER_MASKING_ORDER + 1; ++i) r.shares[i] = x->shares[i] & y->shares[i];
-    for(i=0; i < KYBER_MASKING_ORDER + 1; ++i)
-        for(j=i+1; j < KYBER_MASKING_ORDER + 1; ++j){
-            z_ij  = rand16()&((1<<k)-1);
-            z_ji  = (x->shares[i] & y->shares[j]) ^ z_ij;
-            z_ji ^= (x->shares[j] & y->shares[i]);
-            r.shares[i] ^= z_ij;
-            r.shares[j] ^= z_ji;            
-        }
-    for(i=0; i < KYBER_MASKING_ORDER + 1; ++i) res->shares[i] = r.shares[i];
-#endif
-
+  masked_and_asm_16(NSHARES,res,1,x,1,y,1);
 }
 
 static void sec_mult(Masked* a, Masked* b, Masked* c, unsigned q){
@@ -104,20 +80,8 @@ static void Expand(uint32_t *x,uint32_t *xp,int k,int n2,int n)
 
 static void SecAnd(uint32_t *a,uint32_t *b,uint32_t *c,int k,int n)
 {
-  for(int i=0;i<n;i++)
-    c[i]=a[i] & b[i];
+  masked_and(n,c,1,a,1,b,1);
 
-  for(int i=0;i<n;i++)
-  {
-    for(int j=i+1;j<n;j++)
-    {
-      uint32_t tmp=rand32(); //rand();
-      uint32_t tmp2=(tmp ^ (a[i] & b[j])) ^ (a[j] & b[i]);
-      c[i]^=tmp;
-      c[j]^=tmp2;
-    }
-  }
-  for(int i=0;i<n;i++) c[i]=c[i] % (1 << k);
 }
 
 static void SecAdd(uint32_t *x,uint32_t *y,uint32_t *z,int k,int n)

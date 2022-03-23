@@ -3,7 +3,7 @@
 #include <stdint.h>
 #define KYBER_MASKING_ORDER (NSHARES-1)
 #define KYBER_Q 3329
-typedef struct Masked {int shares[KYBER_MASKING_ORDER+1];} Masked;
+typedef struct Masked {uint32_t shares[KYBER_MASKING_ORDER+1];} Masked;
 
 
 void linear_arithmetic_refresh(Masked* x, unsigned q);

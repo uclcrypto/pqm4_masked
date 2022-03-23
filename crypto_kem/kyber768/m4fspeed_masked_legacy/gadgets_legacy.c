@@ -238,7 +238,7 @@ void convert_2_l_to_1bit_bool(Masked* x, Masked* b, unsigned l){
 } 
 
 
-static unsigned switch_table[9] =  {6, 7, 7, 7, 8, 8, 8, 8, 8}; // Value of \ell in the paper
+static unsigned switch_table[18] =  {6, 7, 7, 7, 8, 8, 8, 8, 8,8,8,8,8,8,8,8,8,8}; // Value of \ell in the paper
 
 void modulus_switch(Masked* x, unsigned q, unsigned shift){
   /* 

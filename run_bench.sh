@@ -35,6 +35,24 @@ done
 echo "case,bench,shares,calls,perf" > $CYCLES_NAME
 cat benchmarks/speed_sub/crypto_kem/$TARGET/* >> $CYCLES_NAME 
 
+TARGET=$SCHEME/m4fspeed_masked_legacy
+CYCLES_NAME=$SCHEME\_legacy_cycles.csv
+RND_NAME=$SCHEME\_legacy_rnd.csv
+echo $RND_NAME
+rm benchmarks/* -rf 
+for D in {2..16}
+do
+    rm -rf obj/ bin/
+    echo "------------------------------"
+    echo "BENCHMARK CYCLES $D SHARES LEGACY"
+    echo "------------------------------"
+    CFLAGS="-DNSHARES=$D -DBENCH=1 -DBENCH_RND=0" python3 benchmarks.py -p nucleo-l4r5zi --uart /dev/ttyACM0 $TARGET --subspeed -o speed 
+done
+
+echo "case,bench,shares,calls,perf" > $CYCLES_NAME
+cat benchmarks/speed_sub/crypto_kem/$TARGET/* >> $CYCLES_NAME 
+
+exit
 rm benchmarks/* -rf 
 for D in {2..16}
 do
