@@ -2,6 +2,7 @@
 #include "gadgets_legacy.h"
 #include "gadgets.h"
 #include "masked_utils.h"
+#include "bench.h"
 #include "params.h"
 #include <stdint.h>
 
@@ -312,17 +313,22 @@ int kyber_poly_comp_hybrid(Masked* mmasked_poly, uint16_t* ppoly){
       prod = prod >> 1;
       alpha++;
   }
+ 
   
-  for(int i=0; i < l1; ++i) range_compare(&(mmasked_poly[i]), &(z[i]), ppoly[i], d1, q);
+  start_bench(comp_dv);
   for(int i=0; i < l2; ++i) high_order_compress(&(mmasked_poly[l1 + i]), &(mmasked_poly[l1 + i]), q, d2, alpha);
-
   for(int i=0; i < l2; ++i) mmasked_poly[l1 + i].shares[0] = (mmasked_poly[l1 + i].shares[0] ^ ppoly[l1 + i])&((1<<d2)-1); 
-
-
   bool_poly_zero_test(mmasked_poly+l1, &b2, d2, 2, l2);
+  stop_bench(comp_dv);
+
+  start_bench(comp_du);
+  for(int i=0; i < l1; ++i) range_compare(&(mmasked_poly[i]), &(z[i]), ppoly[i], d1, q);
+
   b2.shares[0] = (~b2.shares[0])&1;
   for(int i=1; i < KYBER_MASKING_ORDER+1; ++i) b2.shares[i] &=1;
   convert_B2A(&b2, z+l1, 1, q);
-  return zero_test_poly_mul_with_reduction(z, q, 11, l1+1);
-
+  int x = zero_test_poly_mul_with_reduction(z, q, 11, l1+1);
+  stop_bench(comp_du);
+ 
+  return x; 
 }

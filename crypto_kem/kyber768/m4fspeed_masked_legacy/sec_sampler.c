@@ -1,6 +1,7 @@
 #include <stdint.h>
 #include <stddef.h>
 #include "bs_gadgets.h"
+#include "bench.h"
 #include "sec_sampler.h"
 #include "masked_representations.h"
 #include "masked_utils.h"
@@ -330,6 +331,7 @@ void sec_sampler2(uint32_t *a, const uint32_t *x, const uint32_t *y,const uint32
         tmp[GET_BIT_SHARING(lambda-1,D)+i] = 0;
     }
 
+    start_bench(cbd_bool);
     // difference in HW (boolean masking)
     secbitadd(tmp,x,lambda-1,kappa);
     secbitsub(tmp,y,lambda,kappa);
@@ -340,8 +342,10 @@ void sec_sampler2(uint32_t *a, const uint32_t *x, const uint32_t *y,const uint32
 
     // deserialize bitslice
     unmap_bitslice_masked(tmp,tmp_nbs,lambda,w,D);
+    stop_bench(cbd_bool);
 
     // convert bool to 
+    start_bench(cbd_b2a);
     for(size_t i=0;i<w;i++){
         sec_b2a_q(&a[GET_BIT_SHARING(i,D)],
                 &tmp_nbs[GET_BIT_SHARING(i,D)],
@@ -349,6 +353,7 @@ void sec_sampler2(uint32_t *a, const uint32_t *x, const uint32_t *y,const uint32
         uint32_t lol = a[GET_BIT_SHARING(i,D)];
         a[GET_BIT_SHARING(i,D)] = (lol + Q - 4)%Q;
     }
+    stop_bench(cbd_b2a);
 }
 
 void sec_sampler1(uint32_t *a,uint32_t *x, uint32_t *y){
@@ -371,21 +376,3 @@ void sec_sampler1(uint32_t *a,uint32_t *x, uint32_t *y){
         }
     }
 }
-
-/*
-void bs_poly_masked_frommsg(masked_poly* y,
-                         const uint8_t m[KYBER_INDCPA_MSGBYTES * (KYBER_MASKING_ORDER + 1)])
-{
-    uint32_t t1[D];
-    uint32_t t2[D];
-    for(int i=0; i < KYBER_N/8; ++i){
-        for(int j=0; j < 8; ++j){
-            for(int k=0; k < KYBER_MASKING_ORDER+1; ++k) t1[k] = (m[i+k*(KYBER_N/8)]>>j)&1; 
-            //convert_B2A(&t1, &t2, 1, KYBER_Q);
-            sec_b2a_qbit(t2,t1);
-            for(int k=0; k < KYBER_MASKING_ORDER+1; ++k) (y->poly_shares[k]).coeffs[i*8+j] = (t2[k]*((KYBER_Q+1)/2))%KYBER_Q;
-        }
-    }
-
-}
-*/

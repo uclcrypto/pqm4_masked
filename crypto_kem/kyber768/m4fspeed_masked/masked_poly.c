@@ -192,6 +192,8 @@ void masked_poly_tomsg(unsigned char *m, StrAPoly str_r) {
 void masked_poly_cmp(size_t c, uint32_t *rc, const StrAPoly mp,
                      const poly *ref) {
 
+  if(c == KYBER_DU){ start_bench(comp_du);}
+  if(c == KYBER_DV){ start_bench(comp_dv);}
   start_bench(my_masked_poly_cmp);
   APoly r;
   size_t i, b;
@@ -218,6 +220,9 @@ void masked_poly_cmp(size_t c, uint32_t *rc, const StrAPoly mp,
     }
   }
   stop_bench(my_masked_poly_cmp);
+  if(c == KYBER_DU){ stop_bench(comp_du);}
+  if(c == KYBER_DV){ stop_bench(comp_dv);}
+
 }
 
 /*************************************************
