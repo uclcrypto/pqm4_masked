@@ -49,7 +49,7 @@ static inline uint32_t pini_and_core(uint32_t a, uint32_t b, uint32_t r) {
  *            - uint32_t *b: second input buffer
  *            - size_t b_stride: b buffer stride
  **************************************************/
-void masked_and(size_t nshares, uint32_t *z, size_t z_stride, const uint32_t *a,
+void masked_and_c(size_t nshares, uint32_t *z, size_t z_stride, const uint32_t *a,
                 size_t a_stride, const uint32_t *b, size_t b_stride) {
   uint32_t ztmp[nshares];
   uint32_t r;
@@ -85,7 +85,7 @@ void masked_and(size_t nshares, uint32_t *z, size_t z_stride, const uint32_t *a,
  *            - uint32_t *b: second input buffer
  *            - size_t b_stride: b buffer stride
  **************************************************/
-void masked_xor(size_t nshares, uint32_t *out, size_t out_stride,
+void masked_xor_c(size_t nshares, uint32_t *out, size_t out_stride,
                 const uint32_t *ina, size_t ina_stride, const uint32_t *inb,
                 size_t inb_stride) {
   for (size_t i = 0; i < nshares; i++) {

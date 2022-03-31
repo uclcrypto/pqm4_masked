@@ -18,7 +18,7 @@
 #/
 
 SCHEME=$1
-TARGET=$SCHEME/m4fspeed_masked
+TARGET=$SCHEME/m4fspeed_masked_legacy
 CYCLES_NAME=$SCHEME\_asm_cycles.csv
 RND_NAME=$SCHEME\_asm_rnd.csv
 echo $RND_NAME
