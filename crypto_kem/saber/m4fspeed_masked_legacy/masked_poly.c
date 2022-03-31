@@ -344,32 +344,21 @@ void masked_poly_cmp(size_t b_start, size_t b_end, size_t coeffs_size,
                      Poly ref) {
 
   start_bench(my_masked_poly_cmp);
-  size_t i, b;
+  size_t i, j;
   uint32_t bits[2 * NSHARES * coeffs_size];
   uint32_t bits_ref[2 * coeffs_size];
-
-  for (i = 0; i < SABER_N; i += BSSIZE * 2) {
-
-    // convert masked poly
-    masked_dense2bitslice_opt(NSHARES, coeffs_size, bits, 1, NSHARES, mp,
-                              mp_msk_stride, mp_data_stride);
-
-    seca2b(NSHARES, coeffs_size, bits, 1, NSHARES);
-    seca2b(NSHARES, coeffs_size, &bits[NSHARES * coeffs_size], 1, NSHARES);
-
-    // map public polynomial to bitslice
-    masked_dense2bitslice_opt(1, coeffs_size, bits_ref, 1, 1, ref, 1, 1);
-
-    for (b = 0; b < b_end - b_start; b++) {
-
-      // public polynomial and public one
-      bits[(b + b_start) * NSHARES] ^= ~bits_ref[b];
-      masked_and(NSHARES, rc, 1, rc, 1, &bits[(b + b_start) * NSHARES], 1);
-
-      bits[(b + b_start + coeffs_size) * NSHARES] ^= ~bits_ref[b + coeffs_size];
-      masked_and(NSHARES, rc, 1, rc, 1,
-                 &bits[(b + b_start + coeffs_size) * NSHARES], 1);
+  uint32_t a[NSHARES],b[NSHARES];
+  for (i = 0; i < SABER_N; i += 1) {
+    for(j = 0; j < NSHARES; j++){
+      a[j] = mp[ i * mp_data_stride + j * mp_msk_stride];
     }
+    SecA2BModpow2(a,b,NSHARES,coeffs_size);
+    for(j = 0; j < NSHARES; j++){
+      b[j] = (b[j] >> b_start) & ((1<<(b_end - b_start))-1);
+    }
+    b[0] ^= ~ref[i];
+    masked_and(NSHARES, rc, 1, rc, 1,
+                 b, 1);
   }
   stop_bench(my_masked_poly_cmp);
 }
