@@ -342,6 +342,8 @@ void masked_poly_cmp(size_t b_start, size_t b_end, size_t coeffs_size,
                      uint32_t *rc,
                      const uint16_t *mp,size_t mp_msk_stride, size_t mp_data_stride, 
                      Poly ref) {
+  if((b_end - b_start) == 10){ start_bench(comp_du);}
+  if((b_end - b_start) == 4){ start_bench(comp_dv);}
 
   start_bench(my_masked_poly_cmp);
   size_t i, j;
@@ -361,6 +363,9 @@ void masked_poly_cmp(size_t b_start, size_t b_end, size_t coeffs_size,
                  b, 1);
   }
   stop_bench(my_masked_poly_cmp);
+  if((b_end - b_start) == 10){ stop_bench(comp_du);}
+  if((b_end - b_start) == 4){ stop_bench(comp_dv);}
+
 }
 
 /*************************************************

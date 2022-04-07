@@ -25,13 +25,13 @@
 void masked_xor_c(size_t nshares, uint32_t *out, size_t out_stride,
                   const uint32_t *ina, size_t ina_stride, const uint32_t *inb,
                   size_t inb_stride);
-void masked_xor_asm(size_t nshares, uint32_t *out, size_t out_stride,
+void my_masked_xor_asm(size_t nshares, uint32_t *out, size_t out_stride,
                     const uint32_t *ina, size_t ina_stride, const uint32_t *inb,
                     size_t inb_stride);
 void masked_and_c(size_t nshares, uint32_t *z, size_t z_stride,
                   const uint32_t *a, size_t a_stride, const uint32_t *b,
                   size_t b_stride);
-void masked_and_asm(size_t nshares, uint32_t *z, size_t z_stride,
+void my_masked_and_asm(size_t nshares, uint32_t *z, size_t z_stride,
                     const uint32_t *a, size_t a_stride, const uint32_t *b,
                     size_t b_stride);
 
@@ -44,9 +44,9 @@ void masked_and_asm(size_t nshares, uint32_t *z, size_t z_stride,
 
 #else
 #define masked_and(nshares, z, z_stride, a, a_stride, b, b_stride)             \
-  masked_and_asm(nshares, z, z_stride, a, a_stride, b, b_stride)
+  my_masked_and_asm(nshares, z, z_stride, a, a_stride, b, b_stride)
 #define masked_xor(nshares, z, z_stride, a, a_stride, b, b_stride)             \
-  masked_xor_asm(nshares, z, z_stride, a, a_stride, b, b_stride)
+  my_masked_xor_asm(nshares, z, z_stride, a, a_stride, b, b_stride)
 
 #endif
 void copy_sharing(size_t nshares, uint32_t *out, size_t out_stride,

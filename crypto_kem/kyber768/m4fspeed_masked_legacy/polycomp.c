@@ -21,7 +21,7 @@ static unsigned decompress(unsigned x, unsigned q, unsigned d){
 
 
 static void sec_and(Masked* x, Masked* y, Masked* res, int k){
-  masked_and_asm_16(NSHARES,res,1,x,1,y,1);
+  masked_and(NSHARES,res,1,x,1,y,1);
 }
 
 static void sec_mult(Masked* a, Masked* b, Masked* c, unsigned q){

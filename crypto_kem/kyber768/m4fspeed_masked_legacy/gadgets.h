@@ -44,9 +44,9 @@ void masked_and_asm(size_t nshares, uint32_t *z, size_t z_stride,
 #else
 
 #define masked_and(nshares, z, z_stride, a, a_stride, b, b_stride)             \
-  masked_and_asm(nshares, z, z_stride, a, a_stride, b, b_stride)
+  my_masked_and_asm(nshares, z, z_stride, a, a_stride, b, b_stride)
 #define masked_xor(nshares, z, z_stride, a, a_stride, b, b_stride)             \
-  masked_xor_asm(nshares, z, z_stride, a, a_stride, b, b_stride)
+  my_masked_xor_asm(nshares, z, z_stride, a, a_stride, b, b_stride)
 
 #endif
 

@@ -467,6 +467,7 @@ void masked_cbd(size_t nshares, size_t eta, size_t kbits, uint16_t *z,
     i >>= 1;
   }
 
+  start_bench(cbd_bool);
   // compte HW(a)-HW(b) for all 64 input coefficients
   // levaraging 32 bus size
   for (s = 0; s < 2; s++) {
@@ -510,12 +511,15 @@ void masked_cbd(size_t nshares, size_t eta, size_t kbits, uint16_t *z,
       }
     }
   }
+  stop_bench(cbd_bool);
+  start_bench(cbd_b2a);
 
   secb2a(nshares, kbits, z_str_full, 1, nshares);
 
   masked_bitslice2dense_opt(nshares, kbits, z, z_msk_stride, z_data_stride,
                             z_str_full, 1, nshares);
 
+  stop_bench(cbd_b2a);
   for (i = 0; i < 2 * BSSIZE; i++) {
     z[i * nshares] = (z[i * nshares] + (1 << kbits) - eta) & ((1 << kbits) - 1);
   }

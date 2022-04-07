@@ -1,6 +1,6 @@
 #define ASM
-#define D NSHARES
-#define D4 136
+#define D 2
+#define D4 128
 #define DM 1
 
 .syntax unified
@@ -10,8 +10,9 @@
 #define EXPORT .global
 
 CODESECT
-      EXPORT masked_and_asm
-      EXPORT masked_xor_asm
+      EXPORT my_masked_and_asm
+      EXPORT my_masked_xor_asm
+      EXPORT copy_sharing_asm
 /*
 r0 -> tmp 
 r1 -> tmp
@@ -23,7 +24,7 @@ r6 -> 4 * b_stride
 r7 -> NSHARES
 r8 -> a
 */
-masked_and_asm:
+my_masked_and_asm:
     stmdb sp!, {r4,r5,r6,r7,r8,r9,sl,fp,r12,lr} // write done 10 registers -> 40 bytes
     ldr r4, [sp, #40]
     ldr r5, [sp, #44]
@@ -61,7 +62,7 @@ loop_ab: // loop to compute z_tmp[i] = a[i * a_stride] & b[i * b_stride];
 loop_cross_ext:
     add r10, r9, #1
     loop_cross_in:
-        bl get_random // r0 = random value
+        bl get_random
         // pini core r1 = ai, r2 = bj // r3 = tmp // r11 s 
         mul r2, r10, r6
         ldr r2, [r5, r2]    // r2 = b[j * b_stride]
@@ -156,7 +157,7 @@ r8 -> tmp
 r9 -> tmp
 */
 
-masked_xor_asm:
+my_masked_xor_asm:
     stmdb sp!, {r4,r5,r6,r7,r8,r9,sl,fp,r12,lr} // write done 10 registers -> 40 bytes
     ldr r4, [sp, #40]
     ldr r5, [sp, #44]
@@ -181,3 +182,29 @@ loop_ab_xor: // loop to compute z_tmp[i] = a[i * a_stride] & b[i * b_stride];
     bne loop_ab_xor
     add sp, #4
     ldmia.w sp!, {r4,r5,r6,r7,r8,r9,sl,fp,r12,pc}
+
+
+copy_sharing_asm:
+   	cbz	r0, cp_out 
+   	push	{r4, r5, r6,r0}
+   	lsls	r5, r2, #2
+   	ldr	r2, [sp, #16]
+   	lsls	r6, r2, #2
+   	movs	r2, #0
+copy_sharing_loop:
+    adds	r2, #1
+    #ldr r4, [sp]
+   	ldr	r4, [r3, #0]
+    str r0, [sp] 
+   	str	r4, [r1, #0]
+    mov r4, #0
+   	cmp	r0, r2
+   	add	r3, r6
+   	add	r1, r5
+   	bne.n copy_sharing_loop	
+    str r0, [sp] 
+   	pop	{r4, r5, r6, r0}
+   	bx	lr
+cp_out:
+    bx	lr
+
