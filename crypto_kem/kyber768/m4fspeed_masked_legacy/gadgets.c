@@ -124,7 +124,7 @@ uint32_t unmask_boolean(size_t nshares, const uint32_t *in, size_t in_stride) {
  *            - uint32_t *in: input buffer
  *            - size_t in_stride: in buffer stride
  **************************************************/
-void copy_sharing(size_t nshares, uint32_t *out, size_t out_stride,
+void copy_sharing_c(size_t nshares, uint32_t *out, size_t out_stride,
                   const uint32_t *in, size_t in_stride) {
   for (size_t i = 0; i < nshares; i++) {
     out[i * out_stride] = in[i * in_stride];

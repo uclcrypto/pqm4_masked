@@ -124,7 +124,7 @@ uint32_t unmask_boolean(size_t nshares, const uint32_t *in, size_t in_stride) {
  *            - uint32_t *in: input buffer
  *            - size_t in_stride: in buffer stride
  **************************************************/
-void copy_sharing(size_t nshares, uint32_t *out, size_t out_stride,
+void copy_sharing_c(size_t nshares, uint32_t *out, size_t out_stride,
                   const uint32_t *in, size_t in_stride) {
 
   // TODO generate the ASM too
@@ -411,11 +411,14 @@ void secadd_modp(size_t nshares, size_t kbits, uint32_t q, uint32_t *out,
                  size_t in1_data_stride, const uint32_t *in2,
                  size_t in2_msk_stride, size_t in2_data_stride) {
 
+  start_bench(my_secaddmodp_12);
   uint32_t s[(kbits + 1) * nshares];
   uint32_t sp[(kbits + 1) * nshares];
 
+  start_bench(my_secadd_12);
   secadd(nshares, kbits, kbits + 1, s, 1, nshares, in1, in1_msk_stride,
          in1_data_stride, in2, in2_msk_stride, in2_data_stride);
+  stop_bench(my_secadd_12);
 
   secadd_constant(nshares, kbits + 1, kbits + 1, sp, 1, nshares, s, 1, nshares,
                   (1 << (kbits + 1)) - q);
@@ -423,6 +426,8 @@ void secadd_modp(size_t nshares, size_t kbits, uint32_t q, uint32_t *out,
   secadd_constant_bmsk(nshares, kbits, kbits, out, out_msk_stride,
                        out_data_stride, sp, 1, nshares, q, &sp[kbits * nshares],
                        1);
+
+  stop_bench(my_secaddmodp_12);
 }
 
 /*************************************************

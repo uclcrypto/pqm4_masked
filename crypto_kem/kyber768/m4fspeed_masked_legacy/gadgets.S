@@ -37,11 +37,14 @@ my_masked_and_asm:
     
     push {r1,r2} // push z and z_stride (only need them at the end)
     sub sp, D4
+    str r4, [sp,D4-4]
 
     mov r0, #0 // r0 is i
 loop_ab: // loop to compute z_tmp[i] = a[i * a_stride] & b[i * b_stride];
     mul r2, r0, r4   // i * a_stride
+    ldr r1, [sp,D4-4]
     ldr r1, [r8,r2]  // r1 = a[ i * a_stride]
+    ldr r2, [sp,D4-4]
     mul r2, r0, r6   // i * b_stride
     ldr r2, [r5,r2]  // r2 = b[ i * b_stride]
     and r2,r2,r1     // r2 = r1 & r2
@@ -62,7 +65,7 @@ loop_ab: // loop to compute z_tmp[i] = a[i * a_stride] & b[i * b_stride];
 loop_cross_ext:
     add r10, r9, #1
     loop_cross_in:
-        bl get_random // r0 = random value
+        bl get_random
         // pini core r1 = ai, r2 = bj // r3 = tmp // r11 s 
         mul r2, r10, r6
         ldr r2, [r5, r2]    // r2 = b[j * b_stride]
@@ -133,9 +136,11 @@ loop_cmp: // z[i * z_stride] = ztmp[i]
     lsl r4, r0, #2
     ldr r4, [sp, r4] // ztmp[i]
     mul r3, r0, r2   
+    str r0, [r1,r3]
     str r4, [r1,r3]  // z_[i*z_stride] = ztmp[i]
     ldr r3, [sp,D4-4]
     add r0, #1
+    mov r4, #0
     cmp r7, r0
     bne loop_cmp
 
@@ -166,14 +171,18 @@ my_masked_xor_asm:
     sub sp, #4
 
     mov r7, #0 // r0 is i
+    str r7, [sp]
 loop_ab_xor: // loop to compute z_tmp[i] = a[i * a_stride] & b[i * b_stride];
+    ldr r8, [sp]     // dummy writing 
     mul r8, r7, r4   // i * a_stride
     ldr r8, [r3,r8]  // r8 =a[ i * a_stride]
+    ldr r9, [sp]     // dummy writing 
     mul r9, r7, r6   // i * b_stride
     ldr r9, [r5,r9]  // r9 = b[ i * a_stride]
     eor r9, r9, r8   // r9 = a ^ b
     mul r8, r7, r2   // 
     str r7, [sp]     // dummy writing 
+    str r7, [r1,r8]     // dummy writing 
     str r9, [r1, r8] //
     ldr r7, [sp]     // dummy writing 
     mov r9, #0
@@ -193,7 +202,7 @@ copy_sharing_asm:
    	movs	r2, #0
 copy_sharing_loop:
     adds	r2, #1
-    #ldr r4, [sp]
+    ldr r4, [sp]
    	ldr	r4, [r3, #0]
     str r0, [sp] 
    	str	r4, [r1, #0]
