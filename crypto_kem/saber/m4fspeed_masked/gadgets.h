@@ -51,9 +51,9 @@ void copy_sharing_asm(size_t nshares, uint32_t *out, size_t out_stride,
 
 #else
 #define masked_and(nshares, z, z_stride, a, a_stride, b, b_stride)             \
-  my_masked_and_asm(nshares, z, z_stride, a, a_stride, b, b_stride)
+  masked_and_asm(nshares, z, z_stride, a, a_stride, b, b_stride)
 #define masked_xor(nshares, z, z_stride, a, a_stride, b, b_stride)             \
-  my_masked_xor_asm(nshares, z, z_stride, a, a_stride, b, b_stride)
+  masked_xor_asm(nshares, z, z_stride, a, a_stride, b, b_stride)
 #define copy_sharing(nshares, out, out_stride, in, in_stride)                   \
   copy_sharing_asm(nshares,out,out_stride,in, in_stride)
 #endif

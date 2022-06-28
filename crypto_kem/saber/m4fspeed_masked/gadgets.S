@@ -10,8 +10,8 @@
 #define EXPORT .global
 
 CODESECT
-      EXPORT my_masked_and_asm
-      EXPORT my_masked_xor_asm
+      EXPORT masked_and_asm
+      EXPORT masked_xor_asm
       EXPORT copy_sharing_asm
 /*
 r0 -> tmp 
@@ -24,7 +24,7 @@ r6 -> 4 * b_stride
 r7 -> NSHARES
 r8 -> a
 */
-my_masked_and_asm:
+masked_and_asm:
     stmdb sp!, {r4,r5,r6,r7,r8,r9,sl,fp,r12,lr} // write done 10 registers -> 40 bytes
     ldr r4, [sp, #40]
     ldr r5, [sp, #44]
@@ -162,7 +162,7 @@ r8 -> tmp
 r9 -> tmp
 */
 
-my_masked_xor_asm:
+masked_xor_asm:
     stmdb sp!, {r4,r5,r6,r7,r8,r9,sl,fp,r12,lr} // write done 10 registers -> 40 bytes
     ldr r4, [sp, #40]
     ldr r5, [sp, #44]
