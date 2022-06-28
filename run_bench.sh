@@ -1,6 +1,5 @@
 #!/bin/bash
-
-#Copyright 2022 UCLouvain, Belgium and PQM4 contributors
+# Copyright 2022 UCLouvain, Belgium
 #
 # This file is part of pqm4_masked.
 #
@@ -15,56 +14,35 @@
 #
 # You should have received a copy of the GNU General Public License along with
 # pqm4_masked. If not, see <https://www.gnu.org/licenses/>.
-#/
+#
 
 SCHEME=$1
 MAXD=8
 
-# ASM NEW
+function run_bench() {
+    rm benchmarks/* -rf 
+    for D in {2..16}
+    do
+        rm -rf obj/ bin/
+        echo "------------------------------"
+        echo "BENCHMARK CYCLES $D SHARES"
+        echo "------------------------------"
+        CFLAGS=$CFLAGS python3 benchmarks.py -p nucleo-l4r5zi --uart /dev/ttyACM0 $TARGET --subspeed -o speed 
+    done
+    echo "case,bench,shares,calls,perf" > $CYCLES_NAME
+    cat benchmarks/speed_sub/crypto_kem/$TARGET/* >> $CYCLES_NAME 
+}
+
 TARGET=$SCHEME/m4fspeed_masked
+
+# ASM
+echo "Benchmarking ASM implementation"
 CYCLES_NAME=$SCHEME\_asm_cycles.csv
-echo $RND_NAME
-rm benchmarks/* -rf 
-for D in {2..16}
-do
-    rm -rf obj/ bin/
-    echo "------------------------------"
-    echo "BENCHMARK CYCLES $D SHARES"
-    echo "------------------------------"
-    CFLAGS="-DNSHARES=$D -DBENCH=1 -DBENCH_RND=0" python3 benchmarks.py -p nucleo-l4r5zi --uart /dev/ttyACM0 $TARGET --subspeed -o speed 
-done
+CFLAGS="-DNSHARES=$D -DBENCH=1 -DBENCH_RND=0"
+run_bench
 
-echo "case,bench,shares,calls,perf" > $CYCLES_NAME
-cat benchmarks/speed_sub/crypto_kem/$TARGET/* >> $CYCLES_NAME 
-
-# C NEW
-rm benchmarks/* -rf 
+# C
+echo "Benchmarking C implementation"
 CYCLES_NAME=$SCHEME\_c_cycles.csv
-for D in {2..16}
-do
-    rm -rf obj/ bin/
-    echo "------------------------------"
-    echo "BENCHMARK CYCLES $D SHARES"
-    echo "------------------------------"
-    CFLAGS="-DNSHARES=$D -DBENCH=1 -DBENCH_RND=0 -DUSEC" python3 benchmarks.py -p nucleo-l4r5zi --uart /dev/ttyACM0 $TARGET --subspeed -o speed 
-done
-
-echo "case,bench,shares,calls,perf" > $CYCLES_NAME
-cat benchmarks/speed_sub/crypto_kem/$TARGET/* >> $CYCLES_NAME
-
-
-TARGET=$SCHEME/m4fspeed_masked_legacy
-CYCLES_NAME=$SCHEME\_legacy_c_cycles.csv
-echo $RND_NAME
-rm benchmarks/* -rf 
-for D in {2..16}
-do
-    rm -rf obj/ bin/
-    echo "------------------------------"
-    echo "BENCHMARK CYCLES $D SHARES LEGACY"
-    echo "------------------------------"
-    CFLAGS="-DNSHARES=$D -DBENCH=1 -DBENCH_RND=0 -DUSEC" python3 benchmarks.py -p nucleo-l4r5zi --uart /dev/ttyACM0 $TARGET --subspeed -o speed 
-done
-
-echo "case,bench,shares,calls,perf" > $CYCLES_NAME
-cat benchmarks/speed_sub/crypto_kem/$TARGET/* >> $CYCLES_NAME 
+CFLAGS="-DNSHARES=$D -DBENCH=1 -DBENCH_RND=0 -DUSEC"
+run_bench
