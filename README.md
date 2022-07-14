@@ -1,5 +1,7 @@
 # pqm4_masked
 Post-quantum masked crypto library for the ARM Cortex-M4.
+Currently, Kyber768 and saber are implemented.
+See the [research paper](https://eprint.iacr.org/2022/158).
 
 ## Introduction
 The **pqm4\_masked** library is based on [pqm4](https://github.com/mupq/pqm4).
