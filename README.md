@@ -58,7 +58,7 @@ CFLAGS="-DNSHARES=2 -DBENCH=1" python3 benchmarks.py -p nucleo-l4r5zi --uart /de
 
 By default, the implementations use a mix of C and Assembly (implementation
 `S3` and `K3` in the research paper). In order to enforce the usage of pure C
-implementation, the `CFLAGS` must contain `-DUSE_C`. With the `USE_C` defined,
+implementation, the `CFLAGS` must contain `-DUSEC`. With the `USEC` defined,
 the implementations `S2` and `K2` are used.
 
 ### Benchmarks
