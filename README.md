@@ -54,29 +54,46 @@ CFLAGS="-DNSHARES=2 -DBENCH=0" python3 benchmarks.py -p nucleo-l4r5zi --uart /de
 CFLAGS="-DNSHARES=2 -DBENCH=1" python3 benchmarks.py -p nucleo-l4r5zi --uart /dev/ttyACM0 kyber768/m4fspeed_masked --subspeed
 ```
 
+By default, the implementations use a mix of C and Assembly (implementation
+`S3` and `K3` in the research paper). In order to enforce the usage of pure C
+implementation, the `CFLAGS` must contain `-DUSE_C`. With the `USE_C` defined,
+the implementations `S2` and `K2` are used.
+
 ### Benchmarks
-In order to benchmark a specific function `my_function`, you should first edit `BENCH_CASES` in `common/bench.h` such that:
 
-```c
-#define BENCH_CASES X(my_function) X(my_other_function)
-```
-
-Then you can increase the performance counter of that specific function within the source files with:
-```c 
-start_bench(my_function);
-my_function(...);
-stop_bench(my_function);
-```
-See also `common/bench.c` and `common/speed_sub.c` for additional details about the benchmarking procedure. 
-
-Note that the benchmark configurations is done through `CFLAGS`. To run them, the flag `BENCH=1` must be defined. In order to benchmark randomness usage instead of cycle count, `BENCH_RND=1` must be defined.
-In order to run all benchmarks for `saber` or `kyber768`, run:
+You can run all the benchmarks for `saber` or `kyber768`, then show a plot of
+the results by runing:
 
 ```shell
 ./run_bench.sh kyber768 
 python3 parse_bench.py kyber768
 ```
 
+### Profiling framework
+
+We provide a profiling framework that measures the execution time of
+sub-parts of the implementations.
+To configure the measured parts, first edit `BENCH_CASES` in
+`common/bench.h` (we provide a reasonable default).
+
+Example (to measure `my_function` and `my_other_function`):
+```c
+#define BENCH_CASES X(my_function) X(my_other_function)
+```
+
+Then you increase the performance counter of that part where it is called:
+```c 
+start_bench(my_function);
+my_function(...); // This can be any block of code you want to measure.
+stop_bench(my_function);
+```
+See also `common/bench.c` and `common/speed_sub.c` for additional details about
+the profiling framework. 
+
+Note that the profiling framework can be configured with `define`s (e.g. using
+`CFLAGS` configuration).
+To activate the profiling framework, the flag `BENCH=1` must be defined.
+In order to measure randomness usage instead of cycle count, `BENCH_RND=1` must be defined.
 
 ## Bibliography
 
