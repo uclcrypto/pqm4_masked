@@ -70,7 +70,7 @@ loop_cross_ext:
         mul r2, r10, r6
         ldr r2, [r5, r2]    // r2 = b[j * b_stride]
         ldr r3, [sp,D4-4]   // dummy read
-        eors r2, r2, r0     // r2 = bj ^ r
+        eor r2, r2, r0     // r2 = bj ^ r
         mul r1, r9, r4     
         ldr r1, [r8,r1]     // r1 = a[i * a_stride]
         bic r3, r0, r1      // r3 = r & (ai ^ 1)
@@ -92,7 +92,7 @@ loop_cross_ext:
         mul r2, r9, r6
         ldr r2, [r5, r2]    // r2 = b[i * b_stride]
         ldr r3, [sp,D4-4]   // dummy read
-        eors r2, r2, r0     // r2 = bj ^ r
+        eor r2, r2, r0     // r2 = bj ^ r
         mul r1, r10, r4     
         ldr r1, [r8,r1]     // r1 = a[j * a_stride]
         bic r3, r0, r1      // r3 = r & (ai ^ 1)

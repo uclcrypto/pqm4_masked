@@ -48,6 +48,10 @@ void copy_sharing_asm(size_t nshares, uint32_t *out, size_t out_stride,
 #define copy_sharing(nshares, out, out_stride, in, in_stride)                   \
   copy_sharing_c(nshares,out,out_stride,in, in_stride)
 
+static inline void secxor_cst(uint32_t* share, uint32_t cst, const uint32_t* _dummy) {
+    *share ^= cst;
+}
+
 #else
 #define masked_and(nshares, z, z_stride, a, a_stride, b, b_stride)             \
   my_masked_and_asm(nshares, z, z_stride, a, a_stride, b, b_stride)
@@ -55,6 +59,20 @@ void copy_sharing_asm(size_t nshares, uint32_t *out, size_t out_stride,
   my_masked_xor_asm(nshares, z, z_stride, a, a_stride, b, b_stride)
 #define copy_sharing(nshares, out, out_stride, in, in_stride)                   \
   copy_sharing_asm(nshares,out,out_stride,in, in_stride)
+
+static inline void secxor_cst(uint32_t* share, uint32_t cst, const uint32_t* dummy) {
+    asm volatile (
+            "ldr r4, [%[dummy]]\n\t"
+            "ldr r4, [%[share]]\n\t"
+            "eor r4, r4, %[cst]\n\t"
+            "str %[cst], [%[share]]\n\t"
+            "str r4, [%[share]]\n\t"
+            "mov r4, #0"
+            :
+            : [share] "r" (share), [cst] "r" (cst), [dummy] "r" (dummy)
+            : "r4", "memory"
+        );
+}
 
 #endif
 void copy_sharing(size_t nshares, uint32_t *out, size_t out_stride,

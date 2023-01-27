@@ -126,8 +126,6 @@ uint32_t unmask_boolean(size_t nshares, const uint32_t *in, size_t in_stride) {
  **************************************************/
 void copy_sharing_c(size_t nshares, uint32_t *out, size_t out_stride,
                   const uint32_t *in, size_t in_stride) {
-
-  // TODO generate the ASM too
   for (size_t i = 0; i < nshares; i++) {
     out[i * out_stride] = in[i * in_stride];
   }
@@ -320,13 +318,12 @@ void secadd_constant(size_t nshares, size_t kbits, size_t kbits_out,
   uint32_t carry[nshares];
   uint32_t xpy[nshares];
   uint32_t xpc[nshares];
+  uint32_t dummy = 0;
 
   if (constant & 0x1) {
-    for (d = 0; d < nshares; d++) {
-      carry[d] = in1[d * in1_msk_stride];
-    }
+    copy_sharing(nshares, carry, 1, in1, in1_msk_stride);
     copy_sharing(nshares, out, out_msk_stride, in1, in1_msk_stride);
-    out[0] ^= 0xFFFFFFFF;
+    secxor_cst(out, 0xFFFFFFFF, &dummy);
   } else {
     for (d = 0; d < nshares; d++) {
       carry[d] = 0;
@@ -342,8 +339,8 @@ void secadd_constant(size_t nshares, size_t kbits, size_t kbits_out,
       masked_xor(nshares, &out[i * out_data_stride], out_msk_stride, xpy, 1,
                  carry, 1);
 
-      xpy[0] ^= 0xFFFFFFFF;
-      out[i * out_data_stride] ^= 0xFFFFFFFF;
+      secxor_cst(xpy, 0xFFFFFFFF, &dummy);
+      secxor_cst(out + i * out_data_stride, 0xFFFFFFFF, &dummy);
 
       if ((i == (kbits - 1)) && (i == (kbits_out - 1))) {
         return;
@@ -353,8 +350,7 @@ void secadd_constant(size_t nshares, size_t kbits, size_t kbits_out,
                    carry, 1, &in1[i * in1_data_stride], in1_msk_stride);
 
         // add the kbits_out of the constant
-        out[(kbits)*out_data_stride] ^=
-            0xFFFFFFFF * ((constant >> kbits) & 0x1);
+        secxor_cst(out + kbits*out_data_stride, 0xFFFFFFFF * ((constant >> kbits) & 0x1), &dummy);
 
         return;
       }
@@ -374,8 +370,7 @@ void secadd_constant(size_t nshares, size_t kbits, size_t kbits_out,
                    carry, 1, &in1[i * in1_data_stride], in1_msk_stride);
 
         // add the kbits_out of the constant
-        out[(kbits)*out_data_stride] ^=
-            0xFFFFFFFF * ((constant >> kbits) & 0x1);
+        secxor_cst(out + kbits*out_data_stride, 0xFFFFFFFF * ((constant >> kbits) & 0x1), &dummy);
         return;
       }
       masked_and(nshares, carry, 1, carry, 1, &in1[i * in1_data_stride],
