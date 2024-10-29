@@ -71,7 +71,8 @@ the results by runing:
 
 ```shell
 ./run_bench.sh kyber768 
-python3 parse_bench.py kyber768
+python3 parse_bench.py kyber768 asm
+python3 parse_bench.py kyber768 c
 ```
 
 ### Profiling framework
@@ -105,13 +106,16 @@ In order to measure randomness usage instead of cycle count, `BENCH_RND=1` must 
 When referring to this framework in academic literature, please consider using the following bibTeX excerpt:
 
 ```
-@misc{cryptoeprint:2022:158,
-    author       = {Olivier Bronchain and
-		    Gaëtan Cassiers},
-    title        = {Bitslicing Arithmetic/Boolean Masking Conversions for Fun and Profit with Application to Lattice-Based KEMs},
-    howpublished = {Cryptology ePrint Archive, Report 2022/158},
-    year         = {2022},
-    note         = {\url{https://ia.cr/2022/158}},
+@article{DBLP:journals/tches/BronchainC22,
+  author       = {Olivier Bronchain and
+                  Ga{\"{e}}tan Cassiers},
+  title        = {Bitslicing Arithmetic/Boolean Masking Conversions for Fun and Profit
+                  with Application to Lattice-Based KEMs},
+  journal      = {{IACR} Trans. Cryptogr. Hardw. Embed. Syst.},
+  volume       = {2022},
+  number       = {4},
+  pages        = {553--588},
+  year         = {2022}
 }
 ```
 

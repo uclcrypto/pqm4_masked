@@ -27,7 +27,7 @@ function run_bench() {
         echo "------------------------------"
         echo "BENCHMARK CYCLES $D SHARES"
         echo "------------------------------"
-        CFLAGS="-DNSHARES=$D -DBENCH=1 -DBENCH_RND=0 $CUSE"
+        CFLAGS="-DNSHARES=$D -DBENCH=1 -DBENCH_RND=$BENCH_RND $CUSE"
         CFLAGS=$CFLAGS python3 benchmarks.py -p nucleo-l4r5zi --uart /dev/ttyACM0 $TARGET --subspeed -o speed 
     done
     echo "case,bench,shares,calls,perf" > $CYCLES_NAME
@@ -36,14 +36,32 @@ function run_bench() {
 
 TARGET=$SCHEME/m4fspeed_masked
 
+## Benchmark cycles
 # ASM
-echo "Benchmarking ASM implementation"
+echo "Benchmarking ASM implementation (cycles)"
 CYCLES_NAME=$SCHEME\_asm_cycles.csv
 CUSE=""
+BENCH_RND="0"
 run_bench
 
 # C
-echo "Benchmarking C implementation"
+echo "Benchmarking C implementation (cycles)"
 CYCLES_NAME=$SCHEME\_c_cycles.csv
 CUSE="-DUSEC"
+BENCH_RND="0"
+run_bench
+
+## Benchmark randomness usage
+# ASM
+echo "Benchmarking ASM implementation (randomness usage)"
+CYCLES_NAME=$SCHEME\_asm_rnd.csv
+CUSE=""
+BENCH_RND="1"
+run_bench
+
+# C
+echo "Benchmarking C implementation (randomness usage)"
+CYCLES_NAME=$SCHEME\_c_rnd.csv
+CUSE="-DUSEC"
+BENCH_RND="1"
 run_bench
