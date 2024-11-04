@@ -24,8 +24,10 @@ import matplotlib.pyplot as plt
 
 ds = np.arange(2,16)
 target = sys.argv[1]
-rnd_name = target+"_rnd.csv"
-cycles_name = target+"_cycles.csv"
+implem = sys.argv[2]
+rnd_name = f"{target}_{implem}_rnd.csv"
+cycles_name = f"{target}_{implem}_cycles.csv"
+
 
 if target == "kyber768":
     benchs = ['my_cmp_finalize',"decaps","keccak",
